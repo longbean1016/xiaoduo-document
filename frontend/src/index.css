@@ -1056,6 +1056,53 @@ select:focus {
   color: inherit;
 }
 
+.zhijian-prose pre code .hljs-comment,
+.zhijian-prose pre code .hljs-quote {
+  color: #87978c;
+}
+
+.zhijian-prose pre code .hljs-keyword,
+.zhijian-prose pre code .hljs-selector-tag,
+.zhijian-prose pre code .hljs-literal,
+.zhijian-prose pre code .hljs-section,
+.zhijian-prose pre code .hljs-link {
+  color: #8bc7a8;
+}
+
+.zhijian-prose pre code .hljs-string,
+.zhijian-prose pre code .hljs-title,
+.zhijian-prose pre code .hljs-name,
+.zhijian-prose pre code .hljs-type,
+.zhijian-prose pre code .hljs-attribute,
+.zhijian-prose pre code .hljs-symbol,
+.zhijian-prose pre code .hljs-bullet,
+.zhijian-prose pre code .hljs-addition {
+  color: #e1c48c;
+}
+
+.zhijian-prose pre code .hljs-number,
+.zhijian-prose pre code .hljs-meta,
+.zhijian-prose pre code .hljs-built_in,
+.zhijian-prose pre code .hljs-builtin-name,
+.zhijian-prose pre code .hljs-params {
+  color: #9bbce0;
+}
+
+.zhijian-prose pre code .hljs-variable,
+.zhijian-prose pre code .hljs-template-variable,
+.zhijian-prose pre code .hljs-regexp,
+.zhijian-prose pre code .hljs-deletion {
+  color: #d9998c;
+}
+
+.zhijian-prose pre code .hljs-emphasis {
+  font-style: italic;
+}
+
+.zhijian-prose pre code .hljs-strong {
+  font-weight: 700;
+}
+
 .zhijian-prose a {
   color: var(--accent);
   text-decoration: underline;

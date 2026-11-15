@@ -36,6 +36,7 @@ import {
   Link2,
   List,
   ListOrdered,
+  Languages,
   LoaderCircle,
   Palette,
   Pilcrow,
@@ -63,6 +64,10 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Hint } from '../../components/ui/Tooltip'
 import { compressImageFile } from '../../lib/images'
 import { markdownHeadings } from '../../lib/markdownHeadings'
+import {
+  codeLanguageLabel,
+  codeLanguageOptions,
+} from '../../lib/codeHighlight'
 import {
   buildMarkdownDiff,
   type MarkdownDiffChange,
@@ -178,10 +183,12 @@ export function StudioNotePage() {
           const clipboard = event.clipboardData
           if (!clipboard) return false
           const text = clipboard.getData('text/plain')
-          const html = clipboard.getData('text/html')
-          if (!text || html) return false
+          if (!text) return false
           const looksLikeMarkdown =
-            /(^|\n)(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|\[[^\]]+\]\([^)]+\))/.test(
+            /(^|\n)\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|~~~|---|\|.+\|)/.test(
+              text,
+            ) ||
+            /(\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|`[^`\n]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/.test(
               text,
             )
           const currentEditor = editorRef.current
@@ -1851,6 +1858,65 @@ function TextColorMenu({
   )
 }
 
+function CodeLanguageMenu({
+  editor,
+  language,
+}: {
+  editor: Editor | null
+  language: string
+}) {
+  if (!editor) return null
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
+          className="toolbar-button is-active"
+          aria-label="代码语言"
+          title={`代码语言：${codeLanguageLabel(language)}`}
+        >
+          <Languages size={19} />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          className="block-type-menu"
+          side="bottom"
+          align="start"
+          sideOffset={8}
+        >
+          <DropdownMenu.Label className="block-type-menu-label">
+            代码语言
+          </DropdownMenu.Label>
+          {codeLanguageOptions.map((option) => (
+            <DropdownMenu.Item
+              key={option.value}
+              className={cn(
+                'block-type-menu-item',
+                language === option.value && 'is-active',
+              )}
+              onSelect={() =>
+                editor
+                  .chain()
+                  .focus()
+                  .updateAttributes('codeBlock', {
+                    language: option.value,
+                  })
+                  .run()
+              }
+            >
+              <span>{option.label}</span>
+              {language === option.value ? (
+                <Check size={18} className="ml-auto" />
+              ) : null}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  )
+}
+
 function StudioToolbar({
   editor,
   onLink,
@@ -1886,6 +1952,10 @@ function StudioToolbar({
         taskList: currentEditor.isActive('taskList'),
         blockquote: currentEditor.isActive('blockquote'),
         codeBlock: currentEditor.isActive('codeBlock'),
+        codeLanguage:
+          (currentEditor.getAttributes('codeBlock').language as
+            | string
+            | undefined) ?? 'plaintext',
         link: currentEditor.isActive('link'),
         canUndo: currentEditor.can().undo(),
         canRedo: currentEditor.can().redo(),
@@ -2006,6 +2076,12 @@ function StudioToolbar({
         >
           <Code2 size={19} />
         </ToolbarButton>
+        {selectionState.codeBlock ? (
+          <CodeLanguageMenu
+            editor={editor}
+            language={selectionState.codeLanguage}
+          />
+        ) : null}
       </div>
       <div className="toolbar-separator" />
       <div className="toolbar-group">

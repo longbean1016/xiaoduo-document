@@ -18,6 +18,8 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import Underline from '@tiptap/extension-underline'
 import { Markdown } from '@tiptap/markdown'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { lowlight } from '../../lib/codeHighlight'
 import { SlashCommand } from './SlashMenu'
 
 export const ZhijianImage = Image.extend({
@@ -77,6 +79,13 @@ export function createEditorExtensions(options?: {
       heading: { levels: [1, 2, 3, 4, 5] },
       link: false,
       underline: false,
+      codeBlock: false,
+    }),
+    CodeBlockLowlight.configure({
+      lowlight,
+      defaultLanguage: 'plaintext',
+      enableTabIndentation: true,
+      tabSize: 2,
     }),
     ...(editable
       ? [
