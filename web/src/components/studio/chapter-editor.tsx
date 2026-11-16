@@ -55,6 +55,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createEditorExtensions } from '@/components/editor/extensions'
+import { handleEditorBoundaryKeyDown } from '@/components/editor/editor-boundary-actions'
 import { Dialog } from '@/components/ui/dialog'
 import { Hint } from '@/components/ui/tooltip'
 import { StudioSelect } from '@/components/ui/studio-select'
@@ -210,6 +211,7 @@ export function ChapterEditor({
           'aria-label': '章节正文',
           'data-save-state': saveState,
         },
+        handleKeyDown: handleEditorBoundaryKeyDown,
         handlePaste: (_view, event) => {
           const clipboard = event.clipboardData
           if (!clipboard) return false

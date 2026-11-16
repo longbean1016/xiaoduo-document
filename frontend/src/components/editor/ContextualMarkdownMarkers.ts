@@ -170,6 +170,34 @@ function handleMarkerKeyDown(
   }
 
   const ranges = collectMarkRanges(state)
+  if (key === 'ArrowRight') {
+    const endingMark = ranges.find(
+      (range) => range.to === state.selection.from,
+    )
+    if (
+      endingMark &&
+      $from.parentOffset === $from.parent.content.size
+    ) {
+      dispatch(state.tr.setStoredMarks([]))
+      return true
+    }
+    return false
+  }
+  if (key === 'Enter') {
+    const endingMark = ranges.find(
+      (range) => range.to === state.selection.from,
+    )
+    if (
+      endingMark &&
+      $from.parentOffset === $from.parent.content.size
+    ) {
+      const transaction = state.tr.split($from.pos)
+      transaction.setStoredMarks([])
+      dispatch(transaction)
+      return true
+    }
+    return false
+  }
   const boundary =
     key === 'Backspace'
       ? ranges.find((range) => range.from === state.selection.from)
@@ -200,7 +228,12 @@ export const ContextualMarkdownMarkers = Extension.create({
             return markersPluginKey.getState(state)
           },
           handleKeyDown(view, event) {
-            if (event.key !== 'Backspace' && event.key !== 'Delete') {
+            if (
+              event.key !== 'Backspace' &&
+              event.key !== 'Delete' &&
+              event.key !== 'ArrowRight' &&
+              event.key !== 'Enter'
+            ) {
               return false
             }
             const handled = handleMarkerKeyDown(

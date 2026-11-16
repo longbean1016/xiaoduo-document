@@ -55,6 +55,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { createEditorExtensions } from '../../components/editor/extensions'
+import { handleEditorBoundaryKeyDown } from '../../components/editor/EditorBoundaryActions'
 import {
   MarkdownDiffNavigator,
   MarkdownDiffPane,
@@ -177,6 +178,7 @@ export function StudioNotePage() {
           class: 'zhijian-prose markdown-body studio-prose',
           spellcheck: 'false',
         },
+        handleKeyDown: handleEditorBoundaryKeyDown,
         handlePaste: (_view, event) => {
           const clipboard = event.clipboardData
           if (!clipboard) return false

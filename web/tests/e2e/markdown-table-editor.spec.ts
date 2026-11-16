@@ -1,12 +1,16 @@
 import './database-isolation'
 import { expect, test } from '@playwright/test'
+import { appOrigin } from './app-origin'
 import { seedTestDatabase } from '../seed-test-db'
 
 test.beforeEach(async () => {
   await seedTestDatabase()
 })
 
-test('editor supports pasted and inserted GFM tables', async ({ page }) => {
+test('editor supports pasted and inserted GFM tables', async ({
+  context,
+  page,
+}) => {
   await page.goto('/studio/login')
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
@@ -37,6 +41,31 @@ test('editor supports pasted and inserted GFM tables', async ({ page }) => {
   await expect(
     page.getByRole('button', { name: '插入表格' }),
   ).toBeVisible()
+
+  const firstCell = body.locator('table th').first()
+  await firstCell.click()
+  await page.keyboard.press('Home')
+  await page.keyboard.press('Enter')
+  await expect
+    .poll(() =>
+      body.locator('table').evaluate(
+        (table) =>
+          (table.closest('.tableWrapper') ?? table).previousElementSibling
+            ?.tagName ?? '',
+      ),
+    )
+    .toBe('P')
+
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+    origin: appOrigin,
+  })
+  await body.click()
+  await page.keyboard.press('Control+A')
+  await page.keyboard.press('Control+C')
+  const copied = await page.evaluate(() => navigator.clipboard.readText())
+  expect(copied).toContain('能力')
+  expect(copied).toContain('Markdown')
+  expect(copied).toContain('支持')
 
   await body.fill('')
   await page.getByRole('button', { name: '插入表格' }).click()

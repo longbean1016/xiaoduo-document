@@ -401,3 +401,31 @@ test('inline marker deletion keeps content and exits bold formatting', async ({
   await expect(body.locator('strong')).toHaveText('粗体后继续')
   await expect(body).toContainText('普通文本')
 })
+
+test('ArrowRight and Enter exit an inline mark at the last line', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('**最后一行粗体**')
+  const strong = body.locator('strong')
+  await expect(strong).toHaveText('最后一行粗体')
+
+  await strong.click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('下一行普通文本')
+
+  await expect(strong).toHaveText('最后一行粗体')
+  await expect(body).toContainText('下一行普通文本')
+  await expect(strong).not.toContainText('下一行普通文本')
+})
