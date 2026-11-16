@@ -13,7 +13,7 @@ test('mobile reading, search, themes and studio controls remain usable', async (
 }) => {
   await page.goto('/library/attention-and-writing/写作不是归档')
   const themeToggle = page.getByRole('button', {
-    name: '切换到深色主题',
+    name: /主题与护眼背景/,
   })
   await expect(themeToggle).toBeVisible()
   await expect
@@ -26,9 +26,13 @@ test('mobile reading, search, themes and studio controls remain usable', async (
 
   await themeToggle.focus()
   await page.keyboard.press('Enter')
+  await page
+    .getByRole('menu')
+    .getByRole('menuitemradio', { name: '深色' })
+    .click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(
-    page.getByRole('button', { name: '切换到浅色主题' }),
+    page.getByRole('button', { name: /主题与护眼背景：深色/ }),
   ).toBeVisible()
   const contrast = await page.evaluate(() => {
     const parse = (value: string) =>
