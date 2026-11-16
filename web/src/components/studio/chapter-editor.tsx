@@ -64,6 +64,7 @@ import { MarkdownDiffView } from './markdown-diff-view'
 import { parseDatabaseDateTime } from '@/lib/database-time'
 import { compressImageForUpload } from '@/lib/image-compression'
 import { countWords, markdownHeadings } from '@/lib/markdown-headings'
+import { looksLikeMermaidSource } from '@/lib/markdown-mermaid'
 import { normalizeCurrentMarkdownBlock } from '@/lib/markdown-normalize'
 import type { MarkdownDiffChange } from '@/lib/markdown-diff'
 import { cn } from '@/lib/utils'
@@ -218,6 +219,20 @@ export function ChapterEditor({
           const text = clipboard.getData('text/plain')
           const html = clipboard.getData('text/html')
           if (!text) return false
+          if (looksLikeMermaidSource(text)) {
+            const currentEditor = editorRef.current
+            if (!currentEditor) return false
+            currentEditor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'codeBlock',
+                attrs: { language: 'mermaid' },
+                content: [{ type: 'text', text: text.trim() }],
+              })
+              .run()
+            return true
+          }
           const htmlText = html
             ? new DOMParser()
                 .parseFromString(html, 'text/html')

@@ -46,6 +46,45 @@ test('editor renders Mermaid diagrams and can reveal the source', async ({
   await expect(page.locator('.mermaid-diagram svg')).toBeVisible()
 })
 
+test('direct Mermaid source paste creates a rendered diagram', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData(
+      'text/plain',
+      'flowchart LR\n  A[开始] --> B[处理]\n  B --> C{结果}\n  C -->|成功| D[执行操作A]\n  C -->|失败| E[执行操作B]',
+    )
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+
+  await expect(body.locator('.editor-code-block')).toHaveAttribute(
+    'data-language',
+    'mermaid',
+  )
+  await expect(page.locator('.mermaid-diagram svg')).toBeVisible()
+  await expect(page.getByRole('status').first()).toContainText('草稿已保存')
+
+  await page.reload()
+  await expect(page.locator('.mermaid-diagram svg')).toBeVisible()
+})
+
 test('invalid Mermaid stays recoverable on a dark 375px editor', async ({
   page,
 }) => {

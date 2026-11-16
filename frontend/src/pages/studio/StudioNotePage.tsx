@@ -65,6 +65,7 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Hint } from '../../components/ui/Tooltip'
 import { compressImageFile } from '../../lib/images'
 import { markdownHeadings } from '../../lib/markdownHeadings'
+import { looksLikeMermaidSource } from '../../lib/markdownMermaid'
 import {
   buildMarkdownDiff,
   type MarkdownDiffChange,
@@ -185,6 +186,20 @@ export function StudioNotePage() {
           const text = clipboard.getData('text/plain')
           const html = clipboard.getData('text/html')
           if (!text) return false
+          if (looksLikeMermaidSource(text)) {
+            const currentEditor = editorRef.current
+            if (!currentEditor) return false
+            currentEditor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'codeBlock',
+                attrs: { language: 'mermaid' },
+                content: [{ type: 'text', text: text.trim() }],
+              })
+              .run()
+            return true
+          }
           const htmlText = html
             ? new DOMParser()
                 .parseFromString(html, 'text/html')
