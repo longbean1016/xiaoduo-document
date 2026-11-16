@@ -77,7 +77,7 @@ const ZhijianCodeBlock = CodeBlockLowlight.extend({
   },
 }).configure({
   lowlight,
-  defaultLanguage: 'plaintext',
+  defaultLanguage: null,
   enableTabIndentation: true,
   tabSize: 2,
 })

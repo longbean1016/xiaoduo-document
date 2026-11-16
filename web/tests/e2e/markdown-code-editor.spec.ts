@@ -43,9 +43,18 @@ test('editor highlights fenced code and allows changing its language', async ({
     name: '代码语言',
   })
   await expect(languageButton).toBeVisible()
+  const saveRequestPromise = page.waitForRequest(
+    (request) =>
+      request.method() === 'PUT' &&
+      request.url().endsWith('/api/studio/articles/article-1/draft') &&
+      Boolean(request.postData()?.includes('javascript')),
+  )
   await languageButton.click()
   await page.getByRole('menuitem', { name: 'JavaScript' }).click()
   await expect(code).toHaveClass(/language-javascript/)
+  const saveRequest = await saveRequestPromise
+  const savedDraft = saveRequest.postDataJSON() as { markdown: string }
+  expect(savedDraft.markdown).toContain('```javascript')
 
   await expect(page.getByRole('status').first()).toContainText('草稿已保存')
   await page.reload()
