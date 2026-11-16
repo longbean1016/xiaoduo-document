@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { article } from '@/db/schema'
+import { toDatabaseDateTime } from '@/lib/database-time'
 import { createArticleDraft, type ArticleDraft } from './articles'
 
 function plainTextFromMarkdown(markdown: string): string {
@@ -42,7 +43,7 @@ export async function importMarkdownDraft(input: {
       plainText,
       contentJson: null,
       sourceFileName: input.fileName,
-      updatedAt: new Date().toISOString().slice(0, 23).replace('T', ' '),
+      updatedAt: toDatabaseDateTime(),
     })
     .where(eq(article.id, created.id))
 

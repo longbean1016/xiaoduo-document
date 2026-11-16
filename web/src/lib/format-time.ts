@@ -1,5 +1,10 @@
+import {
+  parseDatabaseDateTime,
+  SHANGHAI_TIME_ZONE,
+} from './database-time'
+
 export function formatRelativeTime(iso: string): string {
-  const timestamp = new Date(iso).getTime()
+  const timestamp = parseDatabaseDateTime(iso).getTime()
   const diff = Date.now() - timestamp
   const minute = 60_000
   const hour = 60 * minute
@@ -13,7 +18,8 @@ export function formatRelativeTime(iso: string): string {
   return new Intl.DateTimeFormat('zh-CN', {
     month: 'short',
     day: 'numeric',
-  }).format(new Date(iso))
+    timeZone: SHANGHAI_TIME_ZONE,
+  }).format(parseDatabaseDateTime(iso))
 }
 
 export function formatDateTime(iso: string): string {
@@ -24,6 +30,6 @@ export function formatDateTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-    timeZone: 'Asia/Shanghai',
-  }).format(new Date(iso))
+    timeZone: SHANGHAI_TIME_ZONE,
+  }).format(parseDatabaseDateTime(iso))
 }

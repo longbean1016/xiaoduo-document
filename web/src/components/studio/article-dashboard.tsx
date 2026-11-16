@@ -10,6 +10,7 @@ import {
   Search,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -35,6 +36,7 @@ interface ArticleItem {
 }
 
 type Filter = 'all' | 'draft' | 'published'
+type SortDirection = 'asc' | 'desc'
 
 export function ArticleDashboard({
   categories,
@@ -49,6 +51,9 @@ export function ArticleDashboard({
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [newCategoryId, setNewCategoryId] = useState(
     categories[0]?.id ?? '',
   )
@@ -59,9 +64,7 @@ export function ArticleDashboard({
   )
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
-  const [trashTarget, setTrashTarget] = useState<ArticleItem | null>(
-    null,
-  )
+  const [trashTargets, setTrashTargets] = useState<ArticleItem[]>([])
 
   useEffect(() => {
     const theme = window.localStorage.getItem('zhijian-theme')
@@ -94,7 +97,10 @@ export function ArticleDashboard({
         article.plainText.toLowerCase().includes(normalizedQuery) ||
         article.categoryTitle.toLowerCase().includes(normalizedQuery),
     )
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .sort((a, b) => {
+      const comparison = a.updatedAt.localeCompare(b.updatedAt)
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
 
   const publishedCount = articles.filter(
     (article) => article.publicationState === 'published',
@@ -103,11 +109,63 @@ export function ArticleDashboard({
   const latest = articles
     .slice()
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
+  const selectedVisibleCount = visible.filter((article) =>
+    selectedIds.has(article.id),
+  ).length
+  const allVisibleSelected =
+    visible.length > 0 && selectedVisibleCount === visible.length
+
+  function resetSelection() {
+    setSelectedIds(new Set())
+  }
+
+  function changeFilter(value: Filter) {
+    setFilter(value)
+    resetSelection()
+  }
+
+  function changeCategory(value: string) {
+    setCategoryFilter(value)
+    resetSelection()
+  }
+
+  function changeQuery(value: string) {
+    setQuery(value)
+    resetSelection()
+  }
+
+  function toggleSelection(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (allVisibleSelected) {
+        for (const article of visible) next.delete(article.id)
+      } else {
+        for (const article of visible) next.add(article.id)
+      }
+      return next
+    })
+  }
+
+  function toggleSelectionMode() {
+    setSelectionMode((current) => !current)
+    resetSelection()
+    setMessage('')
+  }
 
   function clearFilters() {
     setFilter('all')
     setQuery('')
     setCategoryFilter('all')
+    resetSelection()
   }
 
   async function create(event: React.FormEvent<HTMLFormElement>) {
@@ -177,23 +235,43 @@ export function ArticleDashboard({
     }
   }
 
-  async function move(id: string, direction: -1 | 1) {
-    await fetch(`/api/studio/articles/${id}/move`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ direction }),
-    })
-    router.refresh()
+  function askTrashSelected() {
+    const targets = articles.filter((article) => selectedIds.has(article.id))
+    if (targets.length) setTrashTargets(targets)
   }
 
-  async function trash(article: ArticleItem) {
+  async function trashSelected() {
+    if (!trashTargets.length) return
     setPending(true)
-    await fetch(`/api/studio/articles/${article.id}/trash`, {
-      method: 'POST',
-    })
-    setPending(false)
-    setTrashTarget(null)
-    router.refresh()
+    setMessage('')
+    try {
+      const response = await fetch('/api/studio/articles/bulk-trash', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ids: trashTargets.map((article) => article.id),
+        }),
+      })
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string
+      }
+      if (!response.ok) {
+        setMessage(
+          payload.error === 'FORBIDDEN_ARTICLE'
+            ? '部分章节已无权操作，请刷新后重试。'
+            : '删除失败，请重试。',
+        )
+        return
+      }
+      setTrashTargets([])
+      setSelectedIds(new Set())
+      setSelectionMode(false)
+      router.refresh()
+    } catch {
+      setMessage('删除失败，请重试。')
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -237,8 +315,10 @@ export function ArticleDashboard({
         ) : null}
       </header>
 
-      {message && !importOpen && !createOpen ? (
-        <p role="alert">{message}</p>
+      {message && !importOpen && !createOpen && !trashTargets.length ? (
+        <p className="studio-dashboard-message" role="alert">
+          {message}
+        </p>
       ) : null}
 
       <div className="studio-stats">
@@ -262,51 +342,135 @@ export function ArticleDashboard({
         </div>
       </div>
 
-      <div className="studio-toolbar">
-        <div className="segmented-control">
-          {(
-            [
-              ['all', '全部'],
-              ['draft', '草稿'],
-              ['published', '已发布'],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={filter === value ? 'is-active' : ''}
-              aria-pressed={filter === value}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <StudioSelect
-            value={categoryFilter}
-            onChange={setCategoryFilter}
-            options={[
-              { value: 'all', label: '全部分类' },
-              ...categories.map((category) => ({
-                value: category.id,
-                label: category.title,
-              })),
-            ]}
-            ariaLabel="按分类筛选"
-          />
-          <label className="studio-search">
-            <Search size={18} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索章节"
+      <div
+        className={`studio-toolbar${
+          selectionMode ? ' is-selection-mode' : ''
+        }`}
+      >
+        <div className="studio-toolbar-row">
+          <div className="studio-toolbar-filters">
+            <div className="segmented-control">
+              {(
+                [
+                  ['all', '全部'],
+                  ['draft', '草稿'],
+                  ['published', '已发布'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={filter === value ? 'is-active' : ''}
+                  aria-pressed={filter === value}
+                  onClick={() => changeFilter(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <StudioSelect
+              value={categoryFilter}
+              onChange={changeCategory}
+              options={[
+                { value: 'all', label: '全部分类' },
+                ...categories.map((category) => ({
+                  value: category.id,
+                  label: category.title,
+                })),
+              ]}
+              ariaLabel="按分类筛选"
             />
-          </label>
+          </div>
+          <div className="studio-toolbar-actions">
+            <label className="studio-search">
+              <Search size={18} />
+              <input
+                value={query}
+                onChange={(event) => changeQuery(event.target.value)}
+                placeholder="搜索章节"
+              />
+            </label>
+            <div
+              className="studio-sort-control"
+              role="group"
+              aria-label="按最后保存时间排序"
+            >
+              <button
+                type="button"
+                className={sortDirection === 'asc' ? 'is-active' : ''}
+                aria-label="按时间正序"
+                aria-pressed={sortDirection === 'asc'}
+                title="按最后保存时间正序"
+                onClick={() => setSortDirection('asc')}
+              >
+                <ArrowUp size={15} />
+                <span>正序</span>
+              </button>
+              <button
+                type="button"
+                className={sortDirection === 'desc' ? 'is-active' : ''}
+                aria-label="按时间倒序"
+                aria-pressed={sortDirection === 'desc'}
+                title="按最后保存时间倒序"
+                onClick={() => setSortDirection('desc')}
+              >
+                <ArrowDown size={15} />
+                <span>倒序</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`studio-delete-mode-button${
+                selectionMode ? ' is-active' : ''
+              }`}
+              aria-pressed={selectionMode}
+              disabled={!articles.length || pending}
+              onClick={toggleSelectionMode}
+            >
+              {selectionMode ? <X size={16} /> : <Trash2 size={16} />}
+              {selectionMode ? '退出删除' : '删除'}
+            </button>
+          </div>
         </div>
+        {selectionMode ? (
+          <div className="studio-selection-bar">
+            <div className="studio-selection-summary" aria-live="polite">
+              <span className="studio-selection-count">{selectedIds.size}</span>
+              <span>
+                {selectedIds.size
+                  ? `已选择 ${selectedIds.size} 个章节`
+                  : '请选择要删除的章节'}
+              </span>
+              <span className="studio-selection-hint">
+                点击文章行或左侧圆框进行选择
+              </span>
+            </div>
+            <div className="studio-selection-actions">
+              <button
+                type="button"
+                className="studio-secondary-button"
+                disabled={!visible.length}
+                onClick={toggleSelectAllVisible}
+              >
+                {allVisibleSelected ? '取消全选' : '全选当前'}
+              </button>
+              <button
+                type="button"
+                className="studio-danger-button"
+                disabled={!selectedIds.size || pending}
+                onClick={askTrashSelected}
+              >
+                <Trash2 size={16} />
+                移入回收站
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <div className="studio-note-table">
+      <div
+        className={`studio-note-table${selectionMode ? ' is-selecting' : ''}`}
+      >
         <div className="studio-table-head" aria-hidden="true">
           <span>章节</span>
           <span>分类</span>
@@ -316,11 +480,37 @@ export function ArticleDashboard({
         {visible.map((article) => (
           <div
             key={article.id}
-            className="studio-table-row"
+            className={[
+              'studio-table-row',
+              selectionMode ? 'is-selecting' : '',
+              selectedIds.has(article.id) ? 'is-selected' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={
+              selectionMode ? () => toggleSelection(article.id) : undefined
+            }
           >
+            {selectionMode ? (
+              <label
+                className="studio-row-checkbox"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(article.id)}
+                  aria-label={`选择 ${article.title}`}
+                  onChange={() => toggleSelection(article.id)}
+                />
+                <span aria-hidden="true" />
+              </label>
+            ) : null}
             <Link
               href={`/studio/notes/${article.id}`}
               className="studio-row-main"
+              onClick={(event) => {
+                if (selectionMode) event.preventDefault()
+              }}
             >
               <span className="min-w-0">
                 <span className="flex items-center gap-2">
@@ -363,42 +553,6 @@ export function ArticleDashboard({
             >
               {formatRelativeTime(article.updatedAt)}
             </span>
-            <span className="studio-row-actions">
-              {canManage ? (
-                <button
-                  type="button"
-                  aria-label={`上移 ${article.title}`}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    void move(article.id, -1)
-                  }}
-                >
-                  <ArrowUp size={17} />
-                </button>
-              ) : null}
-              {canManage ? (
-                <button
-                  type="button"
-                  aria-label={`下移 ${article.title}`}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    void move(article.id, 1)
-                  }}
-                >
-                  <ArrowDown size={17} />
-                </button>
-              ) : null}
-              <button
-                type="button"
-                aria-label={`移入回收站 ${article.title}`}
-                onClick={(event) => {
-                  event.preventDefault()
-                  setTrashTarget(article)
-                }}
-              >
-                <Trash2 size={17} />
-              </button>
-            </span>
           </div>
         ))}
         {!visible.length ? (
@@ -413,21 +567,25 @@ export function ArticleDashboard({
       </div>
 
       <ConfirmDialog
-        open={Boolean(trashTarget)}
+        open={trashTargets.length > 0}
         onOpenChange={(open) => {
-          if (!open) setTrashTarget(null)
+          if (!open) setTrashTargets([])
         }}
-        title="将章节移入回收站？"
+        title={
+          trashTargets.length > 1
+            ? '删除所选章节？'
+            : '删除这个章节？'
+        }
         description={
-          trashTarget
-            ? `章节“${trashTarget.title}”会从内容列表移除，并在回收站保留 30 天。`
-            : ''
+          trashTargets.length > 1
+            ? `所选的 ${trashTargets.length} 个章节会移入回收站，并保留 30 天。`
+            : trashTargets[0]
+              ? `章节“${trashTargets[0].title}”会移入回收站，并保留 30 天。`
+              : ''
         }
         confirmLabel="移入回收站"
         pending={pending}
-        onConfirm={() => {
-          if (trashTarget) void trash(trashTarget)
-        }}
+        onConfirm={() => void trashSelected()}
       />
 
       <Dialog

@@ -116,6 +116,29 @@ export async function deleteCategory(id: string): Promise<boolean> {
   return true
 }
 
+export async function reorderCategories(ids: string[]): Promise<boolean> {
+  const categories = await listCategories()
+  const existingIds = new Set(categories.map((item) => item.id))
+  const requestedIds = new Set(ids)
+  if (
+    ids.length !== categories.length ||
+    requestedIds.size !== ids.length ||
+    ids.some((id) => !existingIds.has(id))
+  ) {
+    return false
+  }
+
+  await db.transaction(async (transaction) => {
+    for (const [position, id] of ids.entries()) {
+      await transaction
+        .update(category)
+        .set({ position: position + 1 })
+        .where(eq(category.id, id))
+    }
+  })
+  return true
+}
+
 export async function moveCategory(
   id: string,
   direction: -1 | 1,

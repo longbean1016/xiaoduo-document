@@ -1,5 +1,11 @@
-import { useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, FolderPlus, Save, Trash2 } from 'lucide-react'
+import {
+  useEffect,
+  useState,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react'
+import { FolderPlus, GripVertical, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePageTitle } from '../../lib/usePageTitle'
 import { useSiteStore } from '../../store/siteStore'
@@ -12,10 +18,42 @@ export function CategoryManagementPage() {
   const createCategory = useSiteStore((state) => state.createCategory)
   const updateCategory = useSiteStore((state) => state.updateCategory)
   const deleteCategory = useSiteStore((state) => state.deleteCategory)
-  const moveCategory = useSiteStore((state) => state.moveCategory)
+  const reorderCategories = useSiteStore((state) => state.reorderCategories)
   const [newTitle, setNewTitle] = useState('')
   const [newSlug, setNewSlug] = useState('')
-  const ordered = categories.slice().sort((a, b) => a.order - b.order)
+  const [draftOrder, setDraftOrder] = useState(() =>
+    orderedCategoryIds(categories),
+  )
+  const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null)
+  const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(
+    null,
+  )
+
+  useEffect(() => {
+    setDraftOrder((current) => {
+      const categoryIds = new Set(categories.map((category) => category.id))
+      const retained = current.filter((id) => categoryIds.has(id))
+      const retainedIds = new Set(retained)
+      return [
+        ...retained,
+        ...orderedCategoryIds(categories).filter((id) => !retainedIds.has(id)),
+      ]
+    })
+  }, [categories])
+
+  const categoryById = new Map(
+    categories.map((category) => [category.id, category]),
+  )
+  const ordered = draftOrder.flatMap((id) => {
+    const category = categoryById.get(id)
+    return category ? [category] : []
+  })
+  const persistedOrder = orderedCategoryIds(categories)
+  const orderDirty =
+    ordered.length !== persistedOrder.length ||
+    ordered.some(
+      (category, index) => category.id !== persistedOrder[index],
+    )
 
   const create = (event: FormEvent) => {
     event.preventDefault()
@@ -29,6 +67,41 @@ export function CategoryManagementPage() {
     toast.success('分类已创建')
   }
 
+  const moveDraftCategory = (categoryId: string, targetId: string) => {
+    if (categoryId === targetId) return
+    setDraftOrder((current) => {
+      const fromIndex = current.indexOf(categoryId)
+      const targetIndex = current.indexOf(targetId)
+      if (fromIndex < 0 || targetIndex < 0) return current
+      const next = current.slice()
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(targetIndex, 0, moved)
+      return next
+    })
+  }
+
+  const moveDraftCategoryBy = (categoryId: string, direction: -1 | 1) => {
+    setDraftOrder((current) => {
+      const index = current.indexOf(categoryId)
+      const nextIndex = index + direction
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) {
+        return current
+      }
+      const next = current.slice()
+      ;[next[index], next[nextIndex]] = [next[nextIndex], next[index]]
+      return next
+    })
+  }
+
+  const saveOrdering = () => {
+    if (!orderDirty) return
+    if (!reorderCategories(draftOrder)) {
+      toast.error('分类排序保存失败')
+      return
+    }
+    toast.success('分类排序已保存')
+  }
+
   return (
     <div className="studio-page max-w-[900px]">
       <header className="studio-page-header">
@@ -37,6 +110,15 @@ export function CategoryManagementPage() {
           <h1>分类</h1>
           <p>分类只负责组织章节。名称用于界面展示，英文标识进入公开网址。</p>
         </div>
+        <button
+          type="button"
+          className="studio-primary-button category-order-save"
+          onClick={saveOrdering}
+          disabled={!orderDirty}
+        >
+          <Save size={18} />
+          保存排序
+        </button>
       </header>
 
       <form onSubmit={create} className="category-create-form">
@@ -72,10 +154,36 @@ export function CategoryManagementPage() {
                   note.published?.categoryId === category.id,
               ).length
             }
-            canMoveUp={index > 0}
-            canMoveDown={index < ordered.length - 1}
-            onMoveUp={() => moveCategory(category.id, -1)}
-            onMoveDown={() => moveCategory(category.id, 1)}
+            isDragging={draggedCategoryId === category.id}
+            isDragOver={dragOverCategoryId === category.id}
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = 'move'
+              event.dataTransfer.setData('text/plain', category.id)
+              setDraggedCategoryId(category.id)
+            }}
+            onDragOver={() => {
+              setDragOverCategoryId(category.id)
+            }}
+            onDragLeave={() => {
+              setDragOverCategoryId((current) =>
+                current === category.id ? null : current,
+              )
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              const sourceId =
+                event.dataTransfer.getData('text/plain') || draggedCategoryId
+              if (sourceId) moveDraftCategory(sourceId, category.id)
+              setDraggedCategoryId(null)
+              setDragOverCategoryId(null)
+            }}
+            onDragEnd={() => {
+              setDraggedCategoryId(null)
+              setDragOverCategoryId(null)
+            }}
+            onKeyboardMove={(direction) =>
+              moveDraftCategoryBy(category.id, direction)
+            }
             onSave={(patch) => {
               if (!updateCategory(category.id, patch)) {
                 toast.error('分类网址标识重复或无效')
@@ -101,20 +209,28 @@ function CategoryEditor({
   category,
   index,
   chapterCount,
-  canMoveUp,
-  canMoveDown,
-  onMoveUp,
-  onMoveDown,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onKeyboardMove,
   onSave,
   onDelete,
 }: {
   category: Category
   index: number
   chapterCount: number
-  canMoveUp: boolean
-  canMoveDown: boolean
-  onMoveUp: () => void
-  onMoveDown: () => void
+  isDragging: boolean
+  isDragOver: boolean
+  onDragStart: (event: DragEvent<HTMLButtonElement>) => void
+  onDragOver: () => void
+  onDragLeave: () => void
+  onDrop: (event: DragEvent<HTMLElement>) => void
+  onDragEnd: () => void
+  onKeyboardMove: (direction: -1 | 1) => void
   onSave: (patch: { title: string; slug: string }) => void
   onDelete: () => void
 }) {
@@ -122,32 +238,43 @@ function CategoryEditor({
   const [slug, setSlug] = useState(category.slug)
 
   return (
-    <section className="category-editor">
+    <section
+      className={[
+        'category-editor',
+        isDragging ? 'is-dragging' : '',
+        isDragOver && !isDragging ? 'is-drag-over' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      aria-label={`分类：${category.title}`}
+      onDragOver={(event) => {
+        event.preventDefault()
+        if (!isDragging) onDragOver()
+      }}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       <header>
+        <button
+          type="button"
+          draggable
+          className="category-drag-handle"
+          aria-label={`拖拽分类：${category.title}`}
+          title="拖拽调整分类顺序"
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+            if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+            event.preventDefault()
+            onKeyboardMove(event.key === 'ArrowUp' ? -1 : 1)
+          }}
+        >
+          <GripVertical size={18} />
+        </button>
         <span>{String(index + 1).padStart(2, '0')}</span>
         <div>
           <h2>{category.title}</h2>
           <p>{chapterCount} 篇章节</p>
-        </div>
-        <div className="ml-auto flex items-center gap-1">
-          <button
-            type="button"
-            disabled={!canMoveUp}
-            onClick={onMoveUp}
-            className="studio-icon-button"
-            aria-label="上移分类"
-          >
-            <ArrowUp size={18} />
-          </button>
-          <button
-            type="button"
-            disabled={!canMoveDown}
-            onClick={onMoveDown}
-            className="studio-icon-button"
-            aria-label="下移分类"
-          >
-            <ArrowDown size={18} />
-          </button>
         </div>
       </header>
       <div className="category-editor-fields sm:grid-cols-2">
@@ -187,4 +314,11 @@ function CategoryEditor({
       </div>
     </section>
   )
+}
+
+function orderedCategoryIds(categories: Category[]) {
+  return categories
+    .slice()
+    .sort((left, right) => left.order - right.order)
+    .map((category) => category.id)
 }

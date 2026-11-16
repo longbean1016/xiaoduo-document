@@ -10,6 +10,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { parseDatabaseDateTime } from '@/lib/database-time'
 import { cn } from '@/lib/utils'
 
 interface NotificationItem {
@@ -39,7 +40,7 @@ function formatTime(value: string): string {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Shanghai',
-  }).format(new Date(value))
+  }).format(parseDatabaseDateTime(value))
 }
 
 export function NotificationCenter({

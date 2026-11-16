@@ -1,6 +1,6 @@
 import './database-isolation'
 import { hashPassword } from 'better-auth/crypto'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { appOrigin } from './app-origin'
 
@@ -40,7 +40,7 @@ test.beforeAll(async () => {
   }
 })
 
-async function login(page: import('@playwright/test').Page, email: string) {
+async function login(page: Page, email: string) {
   await page.goto('/studio/login')
   await page.getByLabel('邮箱').fill(email)
   await page.getByLabel('密码').fill('collaborator-password')
@@ -48,25 +48,30 @@ async function login(page: import('@playwright/test').Page, email: string) {
   await expect(page).toHaveURL(/\/studio$/)
 }
 
-test('collaborators only see and restore their own trash actor items', async ({
+async function moveToTrash(page: Page, title: string) {
+  await page.getByRole('button', { name: '删除', exact: true }).click()
+  await page.getByRole('checkbox', { name: `选择 ${title}` }).check()
+  await page.getByRole('button', { name: '移入回收站' }).click()
+  await page
+    .getByRole('alertdialog', { name: '删除这个章节？' })
+    .getByRole('button', { name: '移入回收站' })
+    .click()
+}
+
+test('collaborators batch restore only their own trash actor items', async ({
   browser,
 }) => {
   const firstContext = await browser.newContext()
   const firstPage = await firstContext.newPage()
   await login(firstPage, 'trash-a@example.com')
-  await firstPage
-    .getByRole('button', { name: '移入回收站 写作不是归档' })
-    .click()
-  await firstPage
-    .getByRole('alertdialog', { name: '将章节移入回收站？' })
-    .getByRole('button', { name: '移入回收站' })
-    .click()
+  await moveToTrash(firstPage, '写作不是归档')
   await firstPage.getByRole('link', { name: '回收站' }).click()
   await expect(firstPage).toHaveURL(/\/studio\/trash$/)
   await expect(
     firstPage.getByRole('heading', { name: '写作不是归档' }),
   ).toBeVisible()
   await expect(firstPage.getByText('长期维护')).toHaveCount(0)
+  await firstPage.getByRole('button', { name: '集中操作' }).click()
   await expect(
     firstPage.getByRole('button', { name: '永久删除' }),
   ).toHaveCount(0)
@@ -74,13 +79,7 @@ test('collaborators only see and restore their own trash actor items', async ({
   const secondContext = await browser.newContext()
   const secondPage = await secondContext.newPage()
   await login(secondPage, 'trash-b@example.com')
-  await secondPage
-    .getByRole('button', { name: '移入回收站 长期维护' })
-    .click()
-  await secondPage
-    .getByRole('alertdialog', { name: '将章节移入回收站？' })
-    .getByRole('button', { name: '移入回收站' })
-    .click()
+  await moveToTrash(secondPage, '长期维护')
   await secondPage.getByRole('link', { name: '回收站' }).click()
   await expect(secondPage).toHaveURL(/\/studio\/trash$/)
   await expect(
@@ -104,10 +103,17 @@ test('collaborators only see and restore their own trash actor items', async ({
     ).status(),
   ).toBe(403)
 
-  await secondPage.getByRole('button', { name: '恢复章节' }).click()
+  await secondPage.getByRole('button', { name: '集中操作' }).click()
+  await secondPage
+    .getByRole('checkbox', { name: '选择 长期维护' })
+    .check()
+  await secondPage.getByRole('button', { name: '恢复所选' }).click()
   await expect(secondPage.getByText('回收站是空的')).toBeVisible()
 
-  await firstPage.getByRole('button', { name: '恢复章节' }).click()
+  await firstPage
+    .getByRole('checkbox', { name: '选择 写作不是归档' })
+    .check()
+  await firstPage.getByRole('button', { name: '恢复所选' }).click()
   await expect(firstPage.getByText('回收站是空的')).toBeVisible()
 
   const ownerContext = await browser.newContext()
@@ -117,14 +123,13 @@ test('collaborators only see and restore their own trash actor items', async ({
   await ownerPage.getByLabel('密码').fill('owner-test-password')
   await ownerPage.getByRole('button', { name: '进入写作台' }).click()
   await expect(ownerPage).toHaveURL(/\/studio$/)
-  await ownerPage.getByRole('button', { name: /移入回收站/ }).first().click()
-  await ownerPage
-    .getByRole('alertdialog', { name: '将章节移入回收站？' })
-    .getByRole('button', { name: '移入回收站' })
-    .click()
+  await moveToTrash(ownerPage, '写作不是归档')
   await ownerPage.getByRole('link', { name: '回收站' }).click()
   await expect(ownerPage).toHaveURL(/\/studio\/trash$/)
-  await expect(ownerPage.getByRole('button', { name: '永久删除' })).toBeVisible()
+  await ownerPage.getByRole('button', { name: '集中操作' }).click()
+  await expect(
+    ownerPage.getByRole('button', { name: '永久删除' }),
+  ).toBeVisible()
 
   await ownerContext.close()
   await secondContext.close()

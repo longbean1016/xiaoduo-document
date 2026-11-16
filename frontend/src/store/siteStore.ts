@@ -106,6 +106,7 @@ interface SiteState {
   updateCategory: (categoryId: string, patch: CategoryPatch) => boolean
   deleteCategory: (categoryId: string) => boolean
   moveCategory: (categoryId: string, direction: -1 | 1) => boolean
+  reorderCategories: (categoryIds: string[]) => boolean
   createNote: (categoryId?: string) => string | null
   updateNoteDraft: (noteId: string, input: DraftInput) => SaveResult
   saveManualVersion: (noteId: string, label?: string) => string | null
@@ -718,6 +719,28 @@ export const useSiteStore = create<SiteState>()(
         set({
           categories: ordered.map((category, order) => ({
             ...category,
+            order,
+          })),
+        })
+        return true
+      },
+
+      reorderCategories: (categoryIds) => {
+        const existingIds = new Set(get().categories.map((category) => category.id))
+        const nextIds = new Set(categoryIds)
+        if (
+          categoryIds.length !== existingIds.size ||
+          nextIds.size !== existingIds.size ||
+          [...existingIds].some((id) => !nextIds.has(id))
+        ) {
+          return false
+        }
+        const categoryById = new Map(
+          get().categories.map((category) => [category.id, category]),
+        )
+        set({
+          categories: categoryIds.map((id, order) => ({
+            ...categoryById.get(id)!,
             order,
           })),
         })

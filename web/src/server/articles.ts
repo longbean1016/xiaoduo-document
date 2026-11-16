@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, lt } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt } from 'drizzle-orm'
 import type { JSONContent } from '@tiptap/core'
 import { db } from '@/db/client'
 import {
@@ -8,6 +8,7 @@ import {
   category,
   urlRedirect,
 } from '@/db/schema'
+import { toDatabaseDateTime } from '@/lib/database-time'
 import { createNotification } from '@/server/notifications'
 
 export interface ArticleDraft {
@@ -221,7 +222,7 @@ export async function saveArticleDraft(
       markdown: input.markdown,
       plainText: input.plainText,
       revision: current.revision + 1,
-      updatedAt: new Date().toISOString().slice(0, 23).replace('T', ' '),
+      updatedAt: toDatabaseDateTime(),
     })
     .where(and(eq(article.id, id), eq(article.revision, input.expectedRevision)))
 
@@ -342,7 +343,7 @@ export async function restoreArticleVersion(
       markdown: version.markdown,
       plainText: version.plainText,
       revision: current.revision + 1,
-      updatedAt: new Date().toISOString().slice(0, 23).replace('T', ' '),
+      updatedAt: toDatabaseDateTime(),
     })
     .where(
       and(
@@ -442,7 +443,7 @@ export async function publishArticle(
       .update(article)
       .set({
         publicationState: 'published',
-        updatedAt: new Date().toISOString().slice(0, 23).replace('T', ' '),
+        updatedAt: toDatabaseDateTime(),
       })
       .where(eq(article.id, articleId))
     if (oldPath && oldPath !== newPath) {
@@ -512,17 +513,19 @@ export async function withdrawArticle(articleId: string): Promise<boolean> {
     .update(article)
     .set({
       publicationState: 'unpublished',
-      updatedAt: new Date().toISOString().slice(0, 23).replace('T', ' '),
+      updatedAt: toDatabaseDateTime(),
     })
     .where(eq(article.id, articleId))
   return result[0].affectedRows > 0
 }
 
-export async function trashArticle(
-  articleId: string,
+export async function trashArticles(
+  articleIds: string[],
   actor: VersionActor,
-): Promise<boolean> {
-  const timestamp = new Date().toISOString().slice(0, 23).replace('T', ' ')
+): Promise<number> {
+  const ids = [...new Set(articleIds)]
+  if (!ids.length) return 0
+  const timestamp = toDatabaseDateTime()
   const result = await db
     .update(article)
     .set({
@@ -532,8 +535,15 @@ export async function trashArticle(
       publicationState: 'unpublished',
       updatedAt: timestamp,
     })
-    .where(eq(article.id, articleId))
-  return result[0].affectedRows > 0
+    .where(and(inArray(article.id, ids), isNull(article.trashedAt)))
+  return result[0].affectedRows
+}
+
+export async function trashArticle(
+  articleId: string,
+  actor: VersionActor,
+): Promise<boolean> {
+  return (await trashArticles([articleId], actor)) > 0
 }
 
 export async function listTrash(): Promise<ArticleDraft[]> {
@@ -605,6 +615,89 @@ export async function listTrashForActor(
     .orderBy(desc(article.trashedAt))
 }
 
+export async function restoreTrashArticlesForActor(
+  articleIds: string[],
+  actor: VersionActor,
+): Promise<number> {
+  const ids = [...new Set(articleIds)]
+  if (!ids.length) return 0
+
+  let allowedIds = ids
+  if (actor.role !== 'owner') {
+    const allowed = await db
+      .select({ id: article.id })
+      .from(article)
+      .innerJoin(
+        articleGrant,
+        and(
+          eq(articleGrant.articleId, article.id),
+          eq(articleGrant.userId, actor.id),
+        ),
+      )
+      .where(
+        and(
+          inArray(article.id, ids),
+          isNotNull(article.trashedAt),
+          eq(article.trashedById, actor.id),
+        ),
+      )
+    allowedIds = allowed.map((item) => item.id)
+  }
+  if (!allowedIds.length) return 0
+
+  const result = await db
+    .update(article)
+    .set({
+      trashedAt: null,
+      trashedById: null,
+      trashedByName: null,
+      publicationState: 'unpublished',
+      updatedAt: toDatabaseDateTime(),
+    })
+    .where(
+      and(
+        inArray(article.id, allowedIds),
+        isNotNull(article.trashedAt),
+      ),
+    )
+  return result[0].affectedRows
+}
+
+export async function permanentlyDeleteArticles(
+  articleIds: string[],
+): Promise<number> {
+  const ids = [...new Set(articleIds)]
+  if (!ids.length) return 0
+
+  return db.transaction(async (transaction) => {
+    const records = await transaction
+      .select({
+        id: article.id,
+        categorySlug: category.slug,
+        path: article.path,
+      })
+      .from(article)
+      .innerJoin(category, eq(article.categoryId, category.id))
+      .where(
+        and(inArray(article.id, ids), isNotNull(article.trashedAt)),
+      )
+    if (!records.length) return 0
+
+    for (const record of records) {
+      const path = `/library/${record.categorySlug}/${record.path}`
+      await transaction
+        .delete(urlRedirect)
+        .where(eq(urlRedirect.fromPath, path))
+      await transaction
+        .delete(urlRedirect)
+        .where(eq(urlRedirect.toPath, path))
+    }
+    await transaction
+      .delete(article)
+      .where(inArray(article.id, records.map((record) => record.id)))
+    return records.length
+  })
+}
 export async function restoreTrashArticle(articleId: string): Promise<boolean> {
   const result = await db
     .update(article)
@@ -613,7 +706,7 @@ export async function restoreTrashArticle(articleId: string): Promise<boolean> {
       trashedById: null,
       trashedByName: null,
       publicationState: 'unpublished',
-      updatedAt: new Date().toISOString().slice(0, 23).replace('T', ' '),
+      updatedAt: toDatabaseDateTime(),
     })
     .where(eq(article.id, articleId))
   return result[0].affectedRows > 0
@@ -664,10 +757,9 @@ export async function permanentlyDeleteArticle(
 }
 
 export async function purgeExpiredTrash(): Promise<number> {
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 23)
-    .replace('T', ' ')
+  const cutoff = toDatabaseDateTime(
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+  )
   const expired = await db
     .select({ id: article.id })
     .from(article)

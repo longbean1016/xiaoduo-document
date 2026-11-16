@@ -1,0 +1,404 @@
+<!DOCTYPE html><html class="h-full" lang="zh-CN" style="width: 1280px; height: 1024px; overflow: hidden; position: relative;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>小多 XIAODUO - 登录写作台</title>
+<!-- Google Fonts: Noto Serif SC, Noto Sans SC, Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+SC:wght@300;400;500;700&amp;family=Noto+Serif+SC:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface-variant": "#3f4946",
+            "surface-dim": "#d8dbd5",
+            "surface-container-low": "#f2f5ee",
+            "on-primary": "#ffffff",
+            "on-secondary-container": "#396c61",
+            "on-error": "#ffffff",
+            "surface-tint": "#21695b",
+            "on-tertiary-container": "#cbd6d1",
+            "primary-fixed": "#aaf0de",
+            "on-tertiary": "#ffffff",
+            "surface-container-highest": "#e0e3dd",
+            "outline": "#6f7976",
+            "secondary-container": "#b5ebdd",
+            "surface": "#f7faf4",
+            "on-secondary-fixed-variant": "#1a4f45",
+            "surface-container": "#ecefe8",
+            "on-error-container": "#93000a",
+            "inverse-surface": "#2d312d",
+            "on-secondary-fixed": "#00201b",
+            "inverse-primary": "#8fd4c2",
+            "background": "#f7faf4",
+            "tertiary-fixed-dim": "#bec9c4",
+            "tertiary-fixed": "#dae5e0",
+            "on-background": "#191d19",
+            "error": "#ba1a1a",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#eff2eb",
+            "on-primary-container": "#9ce1cf",
+            "primary-fixed-dim": "#8fd4c2",
+            "on-primary-fixed": "#00201a",
+            "surface-variant": "#e0e3dd",
+            "secondary-fixed": "#b8eddf",
+            "surface-container-lowest": "#ffffff",
+            "on-primary-fixed-variant": "#005144",
+            "tertiary-container": "#535d59",
+            "on-tertiary-fixed": "#141d1b",
+            "primary-container": "#1d6658",
+            "secondary": "#34675c",
+            "primary": "#004d41",
+            "on-surface": "#191d19",
+            "on-tertiary-fixed-variant": "#3f4946",
+            "surface-container-high": "#e6e9e3",
+            "tertiary": "#3b4642",
+            "secondary-fixed-dim": "#9cd1c4",
+            "error-container": "#ffdad6",
+            "outline-variant": "#bfc9c4",
+            "surface-bright": "#f7faf4"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "fontFamily": {
+            "label-sm": ["Inter", "sans-serif"],
+            "body-sm": ["Noto Sans SC", "Noto Sans", "sans-serif"],
+            "headline-lg-mobile": ["Noto Serif SC", "Noto Serif", "serif"],
+            "headline-md": ["Noto Serif SC", "Noto Serif", "serif"],
+            "label-md": ["Inter", "sans-serif"],
+            "headline-xl-mobile": ["Noto Serif SC", "Noto Serif", "serif"],
+            "headline-sm": ["Noto Serif SC", "Noto Serif", "serif"],
+            "label-lg": ["Inter", "sans-serif"],
+            "body-lg": ["Noto Sans SC", "Noto Sans", "sans-serif"],
+            "headline-xl": ["Noto Serif SC", "Noto Serif", "serif"],
+            "headline-lg": ["Noto Serif SC", "Noto Serif", "serif"],
+            "body-md": ["Noto Sans SC", "Noto Sans", "sans-serif"]
+          },
+          "fontSize": {
+            "label-sm": ["10px", { "lineHeight": "12px", "letterSpacing": "0.14em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["22px", { "lineHeight": "32px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "600" }],
+            "label-md": ["11px", { "lineHeight": "14px", "letterSpacing": "0.12em", "fontWeight": "600" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "38px", "fontWeight": "400" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-lg": ["13px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "28px", "fontWeight": "400" }],
+            "headline-xl": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+            "headline-lg": ["28px", { "lineHeight": "38px", "fontWeight": "400" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+    }
+    
+    /* Paper Texture and Lined Manuscript Effects */
+    .ruled-paper {
+      background-color: #FAF8F2;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 31px,
+        rgba(215, 208, 195, 0.45) 31px,
+        rgba(215, 208, 195, 0.45) 32px
+      );
+      line-height: 32px;
+    }
+
+    .grid-paper {
+      background-color: #F7F4EB;
+      background-size: 18px 18px;
+      background-image: 
+        linear-gradient(to right, rgba(195, 188, 172, 0.28) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(195, 188, 172, 0.28) 1px, transparent 1px);
+    }
+
+    /* Washi tape aesthetic */
+    .washi-tape-green {
+      background: rgba(29, 102, 88, 0.72);
+      backdrop-filter: blur(1.5px);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      position: relative;
+    }
+    .washi-tape-green::before, .washi-tape-green::after {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 4px;
+      background: repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(247, 250, 244, 0.75) 2px, rgba(247, 250, 244, 0.75) 4px);
+    }
+    .washi-tape-green::before { left: 0; }
+    .washi-tape-green::after { right: 0; }
+
+    .washi-tape-kraft {
+      background: rgba(206, 194, 173, 0.65);
+      backdrop-filter: blur(1px);
+      position: relative;
+    }
+    .washi-tape-kraft::before, .washi-tape-kraft::after {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 4px;
+      background: repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(245, 240, 230, 0.8) 2px, rgba(245, 240, 230, 0.8) 4px);
+    }
+    .washi-tape-kraft::before { left: 0; }
+    .washi-tape-kraft::after { right: 0; }
+
+    /* Paper Shadow depths */
+    .paper-shadow-soft {
+      box-shadow: 0 4px 20px -2px rgba(41, 45, 41, 0.06), 0 2px 6px -1px rgba(41, 45, 41, 0.04);
+    }
+    .paper-shadow-layered {
+      box-shadow: 0 8px 30px -4px rgba(29, 102, 88, 0.08), 0 2px 10px 0 rgba(41, 45, 41, 0.04);
+    }
+    .paper-shadow-card {
+      box-shadow: 0 20px 48px -8px rgba(25, 29, 25, 0.09), 0 6px 18px -2px rgba(25, 29, 25, 0.05);
+    }
+
+    /* Paperclip representation */
+    .metal-paperclip {
+      position: absolute;
+      width: 13px;
+      height: 38px;
+      border: 2px solid #b8a67c;
+      border-radius: 7px;
+      z-index: 30;
+      background: transparent;
+      box-shadow: 1px 2px 4px rgba(0,0,0,0.12);
+    }
+    .metal-paperclip::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      left: 1.5px;
+      width: 6px;
+      height: 25px;
+      border: 2px solid #a39063;
+      border-bottom: none;
+      border-radius: 3px 3px 0 0;
+    }
+
+    /* Subtly textured background */
+    .desk-bg {
+      background-color: #F5F7F4;
+      background-image: 
+        radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.6) 0%, transparent 80%),
+        radial-gradient(rgba(0, 77, 65, 0.02) 1px, transparent 0);
+      background-size: 100% 100%, 28px 28px;
+    }
+  </style>
+</head>
+<body class="min-h-screen desk-bg text-on-surface antialiased flex flex-col justify-between selection:bg-secondary-container selection:text-on-secondary-fixed">
+<!-- Floating Lightweight Header / Navigation Bar -->
+<header class="w-full max-w-6xl mx-auto px-6 sm:px-10 py-5 sm:py-7 flex items-center justify-between z-30">
+<a class="inline-flex items-center gap-2.5 text-[#56605B] hover:text-[#1D6658] transition-colors group" href="#">
+
+
+</a>
+<!-- Brand Signature Minimal -->
+<div class="flex items-center gap-3">
+
+</div>
+</header>
+<!-- Main Enclosed Floating Desk Nesting Layout -->
+<main class="w-full max-w-[1240px] mx-auto px-4 sm:px-8 py-4 sm:py-8 flex-1 flex items-center justify-center">
+<!-- Enclosed Desk Composition Wrapper -->
+<div class="relative w-full max-w-[860px] flex items-center justify-center py-8 sm:py-14 select-none sm:select-auto">
+<!-- BACKDROP COLLAGE LAYER 1: Large Offset Ruled Manuscript Sheet (Behind Left-to-Center, -2.5deg) -->
+<div class="absolute w-[92%] sm:w-[580px] h-[520px] sm:h-[580px] ruled-paper border border-[#E7E1D3] rounded paper-shadow-soft -rotate-[2.2deg] -translate-x-3 sm:-translate-x-12 translate-y-3 pointer-events-none opacity-85">
+<!-- Tape detail on background sheet -->
+<div class="washi-tape-kraft w-24 h-5 absolute -top-2.5 left-16 rotate-1 rounded-[1px]"></div>
+<!-- Subtle manuscript margins -->
+<div class="h-full p-8 flex flex-col justify-between opacity-30">
+<div class="w-28 h-1 bg-[#D3CCBC]"></div>
+<div class="w-full border-t border-dashed border-[#DFD7C7]"></div>
+</div>
+</div>
+<!-- BACKDROP COLLAGE LAYER 2: Grid Sketch Pad Sheet (Behind Right-to-Center, 2.6deg) -->
+<div class="absolute w-[88%] sm:w-[540px] h-[500px] sm:h-[550px] grid-paper border border-[#E3DCCB] rounded-sm paper-shadow-layered rotate-[2.4deg] translate-x-4 sm:translate-x-14 -translate-y-2 pointer-events-none opacity-90">
+<!-- Small washi tape corner tab -->
+<div class="washi-tape-green w-20 h-5 absolute -top-2.5 right-12 -rotate-2 rounded-[1px] opacity-80"></div>
+<div class="p-6 flex justify-end opacity-25">
+<span class="text-label-sm tracking-widest text-[#89877F] uppercase">NO. 08 / XIAODUO DRAFT</span>
+</div>
+</div>
+<!-- COLLAGE ACCESSORY 1: Top Right Quick Memo / Sticky Note with Paperclip -->
+<div class="absolute -top-3 sm:-top-5 right-2 sm:right-6 w-36 sm:w-44 p-3.5 bg-[#FFFCF6] border border-[#DDD5C2] rounded paper-shadow-soft rotate-[5deg] z-10 pointer-events-none hidden sm:block">
+<div class="metal-paperclip -top-4 right-6 left-auto"></div>
+<div class="text-[11px] font-label-md tracking-wider text-[#9E9A8F] mb-1">MEMO</div>
+<div class="w-12 h-0.5 bg-[#C5DDD3] mb-2"></div>
+<div class="space-y-1.5 opacity-40">
+<div class="w-full h-1 bg-[#DDD5C2] rounded"></div>
+<div class="w-4/5 h-1 bg-[#DDD5C2] rounded"></div>
+</div>
+</div>
+<!-- COLLAGE ACCESSORY 2: Bottom Left Draft Sticky Note with Push Pin Style -->
+<div class="absolute -bottom-4 sm:-bottom-6 left-1 sm:left-6 w-44 sm:w-52 p-4 bg-[#F5EFE3] border border-[#DCD3BD] rounded paper-shadow-soft -rotate-[5deg] z-10 pointer-events-none hidden sm:block">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] tracking-widest text-[#949084] font-semibold">NOTE</span>
+<span class="material-symbols-outlined text-[13px] text-[#1D6658]">push_pin</span>
+</div>
+<div class="space-y-1.5 opacity-45">
+<div class="w-full h-1.5 bg-[#D5CBBA] rounded"></div>
+<div class="w-5/6 h-1.5 bg-[#D5CBBA] rounded"></div>
+<div class="w-2/3 h-1.5 bg-[#D5CBBA] rounded"></div>
+</div>
+</div>
+<!-- FOREGROUND / CENTERPIECE: Floating Editorial Login Paper Card -->
+<div class="relative w-full max-w-[480px] bg-[#FFFCF5] border border-[#E8E2D2] rounded-xl p-7 sm:p-11 paper-shadow-card z-20">
+<!-- Top Washi Tape fastening the main sheet to desk -->
+<div class="washi-tape-green w-32 h-6 absolute -top-3 left-1/2 -translate-x-1/2 -rotate-1 rounded-[1px]"></div>
+<!-- Card Header -->
+<div class="mb-7 pt-1">
+<div class="flex items-center justify-between mb-2.5">
+<span class="text-label-sm font-label-sm text-[#89877F] tracking-[0.16em] uppercase">STUDIO ACCESS</span>
+
+</div>
+<h1 class="text-headline-lg font-headline-lg text-[#191D19] tracking-tight">进入写作台</h1>
+
+</div>
+<!-- Role Selector Switcher Tabs -->
+<div class="w-full bg-[#F4EFE5] p-1 rounded-lg flex items-center mb-6 border border-[#E4DEC9]/70">
+<button class="flex-1 py-2 text-center text-label-md font-label-md rounded transition-all duration-150 bg-[#E5F0EB] text-[#1D6658] font-bold shadow-sm" id="tab-owner" onclick="switchRole('owner')" type="button">
+          站主登录
+        </button>
+<button class="flex-1 py-2 text-center text-label-md font-label-md rounded transition-all duration-150 text-[#89877F] hover:text-[#1D6658]" id="tab-collaborator" onclick="switchRole('collab')" type="button">
+          协作者登录
+        </button>
+</div>
+<!-- Form Elements -->
+<form class="space-y-5" id="loginForm" onsubmit="handleLoginSubmit(event)">
+<!-- Email Input Field -->
+<div class="space-y-1.5 text-left">
+<label class="block text-label-sm font-label-sm text-[#89877F] uppercase tracking-wider" for="email">
+            邮箱地址
+          </label>
+<div class="relative rounded-lg">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#89877F]">
+<span class="material-symbols-outlined text-[19px]" data-icon="mail">mail</span>
+</div>
+<input class="w-full pl-11 pr-4 py-2.5 bg-[#FFFCF5] border border-[#DCD7CB] text-[#292D29] text-body-md font-body-md rounded-lg focus:outline-none focus:border-[#1D6658] focus:ring-2 focus:ring-[#E5F0EB] transition-all placeholder:text-[#89877F]/60" id="email" name="email" placeholder="请输入您的邮箱" required="" type="email" value="owner@example.com">
+</div>
+</div>
+<!-- Password Input Field -->
+<div class="space-y-1.5 text-left">
+<div class="flex items-center justify-between">
+<label class="block text-label-sm font-label-sm text-[#89877F] uppercase tracking-wider" for="password" id="passwordLabel">
+              站主密码
+            </label>
+<a class="text-label-sm font-label-sm text-[#1D6658] hover:underline transition-all" href="#">忘记密码?</a>
+</div>
+<div class="relative rounded-lg">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#89877F]">
+<span class="material-symbols-outlined text-[19px]" data-icon="key">key</span>
+</div>
+<input class="w-full pl-11 pr-11 py-2.5 bg-[#FFFCF5] border border-[#DCD7CB] text-[#292D29] text-body-md font-body-md rounded-lg focus:outline-none focus:border-[#1D6658] focus:ring-2 focus:ring-[#E5F0EB] transition-all placeholder:text-[#89877F]/60" id="password" name="password" placeholder="请输入密码" required="" type="password" value="owner-test-password">
+<button class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#89877F] hover:text-[#1D6658] transition-colors focus:outline-none" onclick="togglePasswordVisibility()" title="切换显示密码" type="button">
+<span class="material-symbols-outlined text-[19px]" data-icon="visibility_off" id="eyeIcon">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="pt-2">
+<button class="w-full py-3 px-6 bg-[#1D6658] hover:bg-[#174D43] active:opacity-95 text-[#FFFCF5] font-body-md text-[15px] font-medium rounded-lg shadow-sm transition-all duration-150 flex items-center justify-center gap-2 group cursor-pointer" id="submitBtn" type="submit">
+<span class="flex items-center gap-2" id="btnText">
+<span>进入写作台</span>
+<span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</span>
+<span class="hidden" id="btnSpinner">
+<svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+</span>
+</button>
+</div>
+</form>
+<!-- Bottom Card Note / Hint -->
+<div class="mt-7 pt-5 border-t border-[#ECE7DC] text-center">
+
+</div>
+</div>
+</div>
+</main>
+<!-- Grounded Editorial Footer -->
+
+<!-- Micro-Interactions Script -->
+<script>
+  let currentRole = 'owner';
+
+  function switchRole(role) {
+    currentRole = role;
+    const tabOwner = document.getElementById('tab-owner');
+    const tabCollab = document.getElementById('tab-collaborator');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const passwordLabel = document.getElementById('passwordLabel');
+
+    if (role === 'owner') {
+      tabOwner.className = "flex-1 py-2 text-center text-label-md font-label-md rounded transition-all duration-150 bg-[#E5F0EB] text-[#1D6658] font-bold shadow-sm";
+      tabCollab.className = "flex-1 py-2 text-center text-label-md font-label-md rounded transition-all duration-150 text-[#89877F] hover:text-[#1D6658]";
+      emailInput.value = "owner@example.com";
+      passwordInput.value = "owner-test-password";
+      passwordLabel.innerText = "站主密码";
+    } else {
+      tabCollab.className = "flex-1 py-2 text-center text-label-md font-label-md rounded transition-all duration-150 bg-[#E5F0EB] text-[#1D6658] font-bold shadow-sm";
+      tabOwner.className = "flex-1 py-2 text-center text-label-md font-label-md rounded transition-all duration-150 text-[#89877F] hover:text-[#1D6658]";
+      emailInput.value = "writer@example.com";
+      passwordInput.value = "writer-access-key";
+      passwordLabel.innerText = "协作者密码 / 授权秘钥";
+    }
+  }
+
+  function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      eyeIcon.textContent = 'visibility';
+    } else {
+      passwordInput.type = 'password';
+      eyeIcon.textContent = 'visibility_off';
+    }
+  }
+
+  function handleLoginSubmit(event) {
+    event.preventDefault();
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const submitBtn = document.getElementById('submitBtn');
+
+    btnText.classList.add('hidden');
+    btnSpinner.classList.remove('hidden');
+    submitBtn.disabled = true;
+
+    // Simulated smooth authorization transition
+    setTimeout(() => {
+      btnSpinner.classList.add('hidden');
+      btnText.innerHTML = `
+        <span>验证通过 · 开启书房...</span>
+        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+      `;
+      btnText.classList.remove('hidden');
+      submitBtn.classList.replace('bg-[#1D6658]', 'bg-[#174D43]');
+    }, 900);
+  }
+</script>
+
+
+</body></html>

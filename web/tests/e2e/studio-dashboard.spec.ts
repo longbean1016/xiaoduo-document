@@ -90,35 +90,62 @@ test('owner filters and searches accessible chapters', async ({ page }) => {
   ).toBeVisible()
 })
 
-test('owner confirms before moving a chapter to trash', async ({ page }) => {
+test('owner selects one or multiple chapters before moving them to trash', async ({
+  page,
+}) => {
   await page.goto('/studio/login')
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
   await expect(page).toHaveURL(/\/studio$/)
 
-  const chapterRow = page
-    .locator('.studio-table-row')
-    .filter({ hasText: '长期维护' })
-  await chapterRow.hover()
-  await page
-    .getByRole('button', { name: '移入回收站 长期维护' })
-    .click()
+  const toolbar = page.locator('.studio-toolbar')
+  await expect(toolbar).toHaveCSS('position', 'sticky')
+  await expect(
+    page.getByRole('button', { name: '按时间倒序' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: '按时间正序' }).click()
+  await expect(
+    page.getByRole('button', { name: '按时间正序' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    page.getByRole('button', { name: '按时间倒序' }),
+  ).toHaveAttribute('aria-pressed', 'false')
 
-  const confirm = page.getByRole('alertdialog', {
-    name: '将章节移入回收站？',
+  await page.getByRole('button', { name: '删除', exact: true }).click()
+  const firstCheckbox = page.getByRole('checkbox', {
+    name: '选择 写作不是归档',
   })
-  await expect(confirm).toBeVisible()
-  await confirm.getByRole('button', { name: '取消' }).click()
+  const secondCheckbox = page.getByRole('checkbox', {
+    name: '选择 长期维护',
+  })
+  await expect(firstCheckbox).toBeVisible()
+  await expect(secondCheckbox).toBeVisible()
+
+  await secondCheckbox.check()
+  await expect(page.getByText('已选择 1 个章节')).toBeVisible()
+  await page.getByRole('button', { name: '移入回收站' }).click()
+
+  const singleConfirm = page.getByRole('alertdialog', {
+    name: '删除这个章节？',
+  })
+  await expect(singleConfirm).toBeVisible()
+  await singleConfirm.getByRole('button', { name: '取消' }).click()
   await expect(
     page.getByRole('link', { name: /长期维护/ }),
   ).toBeVisible()
 
-  await chapterRow.hover()
-  await page
-    .getByRole('button', { name: '移入回收站 长期维护' })
-    .click()
-  await confirm.getByRole('button', { name: '移入回收站' }).click()
+  await firstCheckbox.check()
+  await expect(page.getByText('已选择 2 个章节')).toBeVisible()
+  await page.getByRole('button', { name: '移入回收站' }).click()
+  const multiConfirm = page.getByRole('alertdialog', {
+    name: '删除所选章节？',
+  })
+  await expect(multiConfirm).toBeVisible()
+  await multiConfirm.getByRole('button', { name: '移入回收站' }).click()
+  await expect(
+    page.getByRole('link', { name: /写作不是归档/ }),
+  ).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: /长期维护/ }),
   ).toHaveCount(0)

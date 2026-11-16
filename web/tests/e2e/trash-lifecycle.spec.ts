@@ -1,51 +1,64 @@
 import './database-isolation'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
-test('owner restores and permanently deletes trash items', async ({ page }) => {
+async function login(page: Page) {
   await page.goto('/studio/login')
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
   await expect(page).toHaveURL(/\/studio$/)
+}
 
-  await page.getByRole('button', { name: /移入回收站/ }).first().click()
+async function moveToTrash(page: Page, title: string) {
+  await page.goto('/studio')
+  await page.getByRole('button', { name: '删除', exact: true }).click()
+  await page.getByRole('checkbox', { name: `选择 ${title}` }).check()
+  await page.getByRole('button', { name: '移入回收站' }).click()
   await page
-    .getByRole('alertdialog', { name: '将章节移入回收站？' })
+    .getByRole('alertdialog', { name: '删除这个章节？' })
     .getByRole('button', { name: '移入回收站' })
     .click()
+}
+
+test('owner batch restores and permanently deletes trash items', async ({
+  page,
+}) => {
+  await login(page)
+  await moveToTrash(page, '写作不是归档')
   await page.getByRole('link', { name: '回收站' }).click()
   await expect(page.getByRole('heading', { name: '回收站' })).toBeVisible()
   await expect(
     page.getByText(/\d+ 天后永久删除/).first(),
   ).toBeVisible()
-  const firstRow = page.locator('.studio-trash-row').first()
-  const restoredTitle = await firstRow.locator('h2').innerText()
-  await firstRow.getByRole('button', { name: '恢复章节' }).click()
+
+  await page.getByRole('button', { name: '集中操作' }).click()
+  await page.getByRole('checkbox', { name: '选择 写作不是归档' }).check()
+  await page.getByRole('button', { name: '恢复所选' }).click()
   await expect(
-    page.getByRole('heading', { name: restoredTitle }),
+    page.getByRole('heading', { name: '写作不是归档' }),
   ).toHaveCount(0)
 
-  await page.goto('/studio')
-  await page.getByRole('button', { name: /移入回收站/ }).first().click()
-  await page
-    .getByRole('alertdialog', { name: '将章节移入回收站？' })
-    .getByRole('button', { name: '移入回收站' })
-    .click()
+  await moveToTrash(page, '长期维护')
   await page.goto('/studio/trash')
-  const deleteRow = page.locator('.studio-trash-row').first()
-  const deletedTitle = await deleteRow.locator('h2').innerText()
-  await deleteRow
-    .getByRole('button', { name: '永久删除章节' })
-    .click()
-  await page.getByRole('button', { name: '取消' }).click()
+  await page.getByRole('button', { name: '集中操作' }).click()
+  await page.getByRole('checkbox', { name: '选择 长期维护' }).check()
+  await page.getByRole('button', { name: '永久删除' }).click()
+
+  const confirm = page.getByRole('alertdialog', {
+    name: '永久删除这个章节？',
+  })
+  await expect(confirm).toBeVisible()
+  await confirm.getByRole('button', { name: '取消' }).click()
   await expect(
-    page.getByRole('heading', { name: deletedTitle }),
+    page.getByRole('heading', { name: '长期维护' }),
   ).toBeVisible()
-  await deleteRow
-    .getByRole('button', { name: '永久删除章节' })
+
+  await page.getByRole('button', { name: '永久删除' }).click()
+  await page
+    .getByRole('alertdialog', { name: '永久删除这个章节？' })
+    .getByRole('button', { name: '永久删除', exact: true })
     .click()
-  await page.getByRole('button', { name: '永久删除', exact: true }).click()
   await expect(
-    page.getByRole('heading', { name: deletedTitle }),
+    page.getByRole('heading', { name: '长期维护' }),
   ).toHaveCount(0)
 })

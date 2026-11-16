@@ -5,6 +5,7 @@ import { Eye, RotateCcw, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { parseDatabaseDateTime } from '@/lib/database-time'
 import { countWords } from '@/lib/markdown-headings'
 import { cn } from '@/lib/utils'
 
@@ -21,13 +22,6 @@ export interface VersionItem {
   plainText?: string
 }
 
-function parseServerDate(value: string): Date {
-  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(value)
-    ? value
-    : `${value.replace(' ', 'T')}Z`
-  return new Date(normalized)
-}
-
 function formatVersionDate(value: string): string {
   return new Intl.DateTimeFormat('zh-CN', {
     month: '2-digit',
@@ -35,7 +29,7 @@ function formatVersionDate(value: string): string {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Shanghai',
-  }).format(parseServerDate(value))
+  }).format(parseDatabaseDateTime(value))
 }
 
 function formatClock(value: string): string {
@@ -43,7 +37,7 @@ function formatClock(value: string): string {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Shanghai',
-  }).format(parseServerDate(value))
+  }).format(parseDatabaseDateTime(value))
 }
 
 export function VersionHistory({

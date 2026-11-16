@@ -4,6 +4,7 @@ import {
   deleteCategory,
   listCategories,
   moveCategory,
+  reorderCategories,
   updateCategory,
 } from '@/server/categories'
 import { createTestConnection, resetTestDatabase } from './test-db'
@@ -70,6 +71,31 @@ describe('category service', () => {
       '工具、方法与流程',
     ])
     expect((await listCategories())[1]?.slug).toBe('workflow')
+  })
+
+  it('persists a complete category order and rejects incomplete orders', async () => {
+    expect(
+      await reorderCategories(['category-2', 'category-1']),
+    ).toBe(true)
+    expect((await listCategories()).map((item) => item.id)).toEqual([
+      'category-2',
+      'category-1',
+    ])
+    expect((await listCategories()).map((item) => item.position)).toEqual([
+      1, 2,
+    ])
+
+    expect(await reorderCategories(['category-1'])).toBe(false)
+    expect(
+      await reorderCategories(['category-1', 'missing-category']),
+    ).toBe(false)
+    expect(
+      await reorderCategories(['category-1', 'category-1']),
+    ).toBe(false)
+    expect((await listCategories()).map((item) => item.id)).toEqual([
+      'category-2',
+      'category-1',
+    ])
   })
 
   it('reorders categories and refuses to delete a non-empty category', async () => {

@@ -14,13 +14,18 @@ import {
   Trash2,
   UsersRound,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { AuthorAvatar } from '@/components/author-avatar'
 import { BrandMark } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog } from '@/components/ui/dialog'
 import { StudioSelect } from '@/components/ui/studio-select'
+import {
+  StudioSurfacePicker,
+  useStudioSurface,
+} from '@/components/studio/studio-surface-picker'
 import { Toaster } from '@/components/ui/toaster'
 import { cn } from '@/lib/utils'
 import { signOutAction } from '@/app/actions/auth'
@@ -47,6 +52,7 @@ export function StudioShell({
   const pathname = usePathname()
   const router = useRouter()
   const isOwner = role === 'owner'
+  const studioSurface = useStudioSurface()
   const isEditor = pathname.startsWith('/studio/notes/')
   const orderedCategories = [...categories].sort(
     (left, right) => left.position - right.position,
@@ -57,6 +63,8 @@ export function StudioShell({
   )
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
+  const [signOutOpen, setSignOutOpen] = useState(false)
+  const signOutFormRef = useRef<HTMLFormElement>(null)
 
   function startWriting() {
     if (!isOwner) return
@@ -106,7 +114,7 @@ export function StudioShell({
 
   return (
     <>
-      <div className="studio-shell">
+      <div className="studio-shell" data-studio-surface={studioSurface}>
       {!isEditor ? (
         <div className="studio-mobile-bar">
           <BrandMark compact />
@@ -185,8 +193,8 @@ export function StudioShell({
               className="studio-new-button"
               onClick={startWriting}
             >
-              <Sparkles size={19} />
-              开始写作
+              <Sparkles size={21} />
+              <span className="studio-new-label">开始写作</span>
             </button>
           </div>
         ) : null}
@@ -247,6 +255,9 @@ export function StudioShell({
             查看公开站
             <ArrowUpRight size={17} />
           </Link>
+          <div className="mt-3">
+            <StudioSurfacePicker />
+          </div>
           <div className="mt-4 flex items-center gap-2.5 px-2">
             <AuthorAvatar
               name={currentName}
@@ -271,12 +282,13 @@ export function StudioShell({
                 <Bell size={19} />
               </Link>
             ) : null}
-            <form action={signOutAction}>
+            <form ref={signOutFormRef} action={signOutAction}>
               <button
-                type="submit"
+                type="button"
                 className="studio-icon-button"
                 aria-label="退出写作台"
                 title="退出写作台"
+                onClick={() => setSignOutOpen(true)}
               >
                 <LogOut size={19} />
               </button>
@@ -336,6 +348,14 @@ export function StudioShell({
           </div>
         </form>
       </Dialog>
+      <ConfirmDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        title="退出登录？"
+        description="退出后需要重新输入邮箱和密码才能进入写作台。"
+        confirmLabel="退出登录"
+        onConfirm={() => signOutFormRef.current?.requestSubmit()}
+      />
       </div>
       <Toaster />
     </>
@@ -395,7 +415,7 @@ function StudioNav({
       className={cn('studio-nav-link', active && 'is-active')}
     >
       {icon}
-      {children}
+      <span className="studio-nav-label">{children}</span>
     </Link>
   )
 }

@@ -21,8 +21,16 @@ export default async function CategoriesPage() {
     ]),
   )
 
+  const categorySnapshot = categories
+    .map(
+      (category) =>
+        `${category.id}:${category.title}:${category.slug}`,
+    )
+    .join('|')
+
   return (
     <CategoryManager
+      key={categorySnapshot}
       initialCategories={categories}
       chapterCounts={chapterCounts}
     />

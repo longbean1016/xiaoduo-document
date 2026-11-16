@@ -5,11 +5,14 @@ import {
   listTrash,
   listTrashForActor,
   permanentlyDeleteArticle,
+  permanentlyDeleteArticles,
   publishArticle,
   purgeExpiredTrash,
   restoreTrashArticle,
+  restoreTrashArticlesForActor,
   restoreTrashArticleForActor,
   trashArticle,
+  trashArticles,
 } from '@/server/articles'
 import { deleteCategory } from '@/server/categories'
 import { getPublicChapterByPath } from '@/lib/public-library'
@@ -59,6 +62,71 @@ describe('trash lifecycle', () => {
     expect(await listArticleVersions('article-1')).toHaveLength(0)
   })
 
+  it('moves multiple articles to trash in one operation', async () => {
+    const connection = await createTestConnection()
+    try {
+      await connection.query(
+        `INSERT INTO article (
+          id, category_id, title, path, position, markdown, plain_text,
+          revision, publication_state, created_at, updated_at
+        ) VALUES (
+          'article-2', 'category-1', '长期维护', '长期维护', 2,
+          '正文', '正文', 1, 'draft', NOW(3), NOW(3)
+        )`,
+      )
+    } finally {
+      await connection.end()
+    }
+
+    expect(
+      await trashArticles(['article-1', 'article-2'], actor),
+    ).toBe(2)
+    expect((await listTrash()).map((item) => item.id).sort()).toEqual([
+      'article-1',
+      'article-2',
+    ])
+  })
+
+  it('batch restores and permanently deletes multiple trash articles', async () => {
+    const connection = await createTestConnection()
+    try {
+      await connection.query(
+        `INSERT INTO article (
+          id, category_id, title, path, position, markdown, plain_text,
+          revision, publication_state, created_at, updated_at
+        ) VALUES (
+          'article-2', 'category-1', '长期维护', '长期维护', 2,
+          '正文', '正文', 1, 'draft', NOW(3), NOW(3)
+        )`,
+      )
+    } finally {
+      await connection.end()
+    }
+
+    expect(
+      await trashArticles(['article-1', 'article-2'], actor),
+    ).toBe(2)
+    expect(
+      await restoreTrashArticlesForActor(
+        ['article-1', 'article-2'],
+        actor,
+      ),
+    ).toBe(2)
+    expect(await listTrash()).toHaveLength(0)
+    expect((await getArticleDraft('article-1'))?.publicationState).toBe(
+      'unpublished',
+    )
+
+    expect(
+      await trashArticles(['article-1', 'article-2'], actor),
+    ).toBe(2)
+    expect(
+      await permanentlyDeleteArticles(['article-1', 'article-2']),
+    ).toBe(2)
+    expect(await getArticleDraft('article-1')).toBeNull()
+    expect(await getArticleDraft('article-2')).toBeNull()
+    expect(await listTrash()).toHaveLength(0)
+  })
   it('purges only trash older than 30 days', async () => {
     const connection = await createTestConnection()
     try {

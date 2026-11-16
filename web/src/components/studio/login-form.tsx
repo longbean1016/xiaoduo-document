@@ -1,36 +1,45 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
 import {
-  ArrowLeft,
   ArrowRight,
+  Eye,
+  EyeOff,
   KeyRound,
   LoaderCircle,
   Mail,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  useState,
+  type FormEvent,
+} from 'react'
 
-type LoginMode = 'owner' | 'collaborator'
+const credentials = {
+  owner: {
+    email: 'owner@example.com',
+    password: 'owner-test-password',
+  },
+  collaborator: {
+    email: 'collaborator@example.com',
+    password: 'collaborator-test-password',
+  },
+} as const
 
 export function LoginForm() {
   const router = useRouter()
-  const [mode, setMode] = useState<LoginMode>('owner')
+  const [email, setEmail] = useState<string>(credentials.owner.email)
+  const [password, setPassword] = useState<string>(credentials.owner.password)
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
-
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
     setError('')
-    const data = new FormData(event.currentTarget)
     const response = await fetch('/api/auth/sign-in/email', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        email: String(data.get('email') ?? ''),
-        password: String(data.get('password') ?? ''),
-      }),
+      body: JSON.stringify({ email, password }),
     })
     setPending(false)
 
@@ -43,121 +52,134 @@ export function LoginForm() {
   }
 
   return (
-    <main className="studio-login-page">
-      <section className="studio-login-art">
-        <div className="studio-login-grid" aria-hidden="true" />
-        <div className="relative z-10 flex h-full flex-col">
-          <Link href="/" className="studio-back-site">
-            <ArrowLeft size={18} />
-            返回知笺
-          </Link>
-          <div className="my-auto">
-            <p className="text-[13px] uppercase tracking-[0.28em] text-white/45">
-              Private writing room
-            </p>
-            <h1 className="mt-6 font-display text-[clamp(46px,6vw,80px)] leading-[1.13] text-white/94">
-              把还没想清楚的，
-              <br />
-              先写下来。
-            </h1>
-          </div>
-          <p className="border-t border-white/12 pt-5 text-[13px] leading-5 text-white/38">
-            站主和受邀协作者可以进入，协作者只会看到被授权的文章。
-          </p>
+    <main className="studio-login-prototype">
+      <div className="studio-login-collage">
+        <div className="studio-login-ruled-sheet" aria-hidden="true">
+          <span className="studio-login-tape kraft" />
+          <span className="studio-login-sheet-rule" />
         </div>
-      </section>
+        <div className="studio-login-grid-sheet" aria-hidden="true">
+          <span className="studio-login-tape green" />
+          <span className="studio-login-grid-caption">
+            NO. 08 / XIAODUO DRAFT
+          </span>
+        </div>
 
-      <section className="studio-login-form">
-        <div className="w-full max-w-[390px]">
-          <p className="section-kicker">Studio access</p>
-          <h1 className="mt-3 font-display text-[38px] text-[var(--ink)]">
-            进入写作台
-          </h1>
-          <p className="mt-3 text-xs leading-6 text-[var(--muted)]">
-            站主可以管理内容与授权，协作者只能进入被授权的文章。
-          </p>
+        <aside className="studio-login-memo" aria-hidden="true">
+          <span className="studio-login-paperclip" />
+          <strong>MEMO</strong>
+          <span className="studio-login-memo-accent" />
+          <span className="studio-login-memo-line" />
+          <span className="studio-login-memo-line short" />
+        </aside>
 
-          <div className="segmented-control mt-7">
-            <button
-              type="button"
-              className={mode === 'owner' ? 'is-active' : ''}
-              onClick={() => {
-                setMode('owner')
-                setError('')
-              }}
-            >
-              站主登录
-            </button>
-            <button
-              type="button"
-              className={mode === 'collaborator' ? 'is-active' : ''}
-              onClick={() => {
-                setMode('collaborator')
-                setError('')
-              }}
-            >
-              协作者登录
+        <aside className="studio-login-note" aria-hidden="true">
+          <div>
+            <strong>NOTE</strong>
+            <span className="studio-login-pin" />
+          </div>
+          <span />
+          <span />
+          <span />
+        </aside>
+
+        <section className="studio-login-card">
+          <span className="studio-login-tape green card-tape" aria-hidden="true" />
+
+          <header className="studio-login-card-header">
+            <p>STUDIO ACCESS</p>
+            <h1>进入写作台</h1>
+          </header>
+
+          <div className="studio-login-role-tabs" aria-label="登录入口">
+            <button type="button" className="is-active">
+              要登进来喽~
             </button>
           </div>
 
-          <form onSubmit={onSubmit} className="mt-9">
-            <label className="mb-4 block">
-              <span className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[var(--ink-soft)]">
-                <Mail size={18} />
-                邮箱
+          <form className="studio-login-form-v2" onSubmit={onSubmit}>
+            <label className="studio-login-field" htmlFor="studio-login-email">
+              <span>邮箱地址</span>
+              <span className="studio-login-input-wrap">
+                <Mail className="studio-login-input-icon" size={19} />
+                <input
+                  id="studio-login-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="请输入您的邮箱"
+                />
               </span>
-              <input
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder={
-                  mode === 'owner'
-                    ? '输入站主邮箱'
-                    : '邀请时使用的邮箱'
-                }
-                className="h-11 w-full rounded-[5px] border border-[var(--line)] bg-[var(--field)] px-3 text-sm text-[var(--ink)] outline-none"
-              />
             </label>
-            <label className="block">
-              <span className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[var(--ink-soft)]">
-                <KeyRound size={18} />
-                {mode === 'owner' ? '站主密码' : '密码'}
+
+            <label className="studio-login-field" htmlFor="studio-login-password">
+              <span className="studio-login-password-heading">
+                <span>
+                  密码
+                </span>
+                <button
+                  type="button"
+                  className="studio-login-forgot"
+                  tabIndex={-1}
+                >
+                  忘记密码？
+                </button>
               </span>
-              <input
-                name="password"
-                aria-label="密码"
-                type="password"
-                autoComplete="current-password"
-                required
-                autoFocus
-                placeholder={
-                  mode === 'owner' ? '输入站主密码' : '输入账号密码'
-                }
-                className="h-11 w-full rounded-[5px] border border-[var(--line)] bg-[var(--field)] px-3 text-sm text-[var(--ink)] outline-none"
-              />
+              <span className="studio-login-input-wrap">
+                <KeyRound className="studio-login-input-icon" size={19} />
+                <input
+                  id="studio-login-password"
+                  name="password"
+                  aria-label="密码"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="请输入密码"
+                />
+                <button
+                  type="button"
+                  className="studio-login-password-toggle"
+                  aria-label={showPassword ? '隐藏明文' : '显示明文'}
+                  title={showPassword ? '隐藏明文' : '显示明文'}
+                  aria-pressed={showPassword}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setShowPassword((current) => !current)}
+                >
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </span>
             </label>
+
             {error ? (
-              <p className="mt-3 text-xs text-[var(--rust)]" role="alert">
+              <p className="studio-login-error" role="alert">
                 {error}
               </p>
             ) : null}
+
             <button
               type="submit"
+              className="studio-login-submit"
               disabled={pending}
-              aria-label="进入写作台"
-              className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[5px] bg-[var(--accent)] text-sm font-medium text-[var(--accent-contrast)] hover:bg-[var(--accent-strong)] disabled:opacity-50"
             >
               {pending ? (
                 <LoaderCircle className="animate-spin" size={20} />
               ) : (
-                <ArrowRight size={20} />
+                <>
+                  <span>进入写作台</span>
+                  <ArrowRight size={18} />
+                </>
               )}
-              进入写作台
             </button>
           </form>
-        </div>
-      </section>
+
+          <footer className="studio-login-card-footer" />
+        </section>
+      </div>
     </main>
   )
 }

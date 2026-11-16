@@ -60,6 +60,7 @@ import { Hint } from '@/components/ui/tooltip'
 import { StudioSelect } from '@/components/ui/studio-select'
 import { VersionHistory, type VersionItem } from './version-history'
 import { MarkdownDiffView } from './markdown-diff-view'
+import { parseDatabaseDateTime } from '@/lib/database-time'
 import { compressImageForUpload } from '@/lib/image-compression'
 import { countWords, markdownHeadings } from '@/lib/markdown-headings'
 import { normalizeCurrentMarkdownBlock } from '@/lib/markdown-normalize'
@@ -126,20 +127,17 @@ function formatClock(iso: string): string {
   return new Intl.DateTimeFormat('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(iso))
+  }).format(parseDatabaseDateTime(iso))
 }
 
 function formatVersionDate(iso: string): string {
-  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(iso)
-    ? iso
-    : `${iso.replace(' ', 'T')}Z`
   return new Intl.DateTimeFormat('zh-CN', {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Shanghai',
-  }).format(new Date(normalized))
+  }).format(parseDatabaseDateTime(iso))
 }
 
 export function ChapterEditor({

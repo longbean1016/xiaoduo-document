@@ -1,9 +1,10 @@
 'use client'
 
-import { RotateCcw, Trash2 } from 'lucide-react'
+import { CheckSquare2, RotateCcw, Trash2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { parseDatabaseDateTime } from '@/lib/database-time'
 
 interface TrashItem {
   id: string
@@ -16,7 +17,7 @@ interface TrashItem {
 
 function relativeTime(value: string | null): string {
   if (!value) return ''
-  const diff = Date.now() - new Date(value).getTime()
+  const diff = Date.now() - parseDatabaseDateTime(value).getTime()
   const days = Math.floor(diff / 86_400_000)
   if (days <= 0) return '今天'
   if (days === 1) return '1 天前'
@@ -35,38 +36,107 @@ export function TrashManager({
   const router = useRouter()
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<TrashItem | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [now] = useState(() => Date.now())
 
-  async function restore(id: string) {
-    setPending(true)
-    setMessage('')
-    const response = await fetch(`/api/studio/articles/${id}/restore`, {
-      method: 'POST',
-    })
-    setPending(false)
-    if (!response.ok) {
-      setMessage('恢复失败，请重试。')
-      return
-    }
-    setMessage('章节已恢复为未发布草稿')
-    router.refresh()
+  const allSelected =
+    initialItems.length > 0 && selectedIds.size === initialItems.length
+
+  function resetSelection() {
+    setSelectedIds(new Set())
+    setSelectionMode(false)
+    setDeleteOpen(false)
   }
 
-  async function permanentlyDelete(item: TrashItem) {
+  function toggleSelectionMode() {
+    setSelectionMode((current) => !current)
+    setSelectedIds(new Set())
+    setMessage('')
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(
+      allSelected ? new Set() : new Set(initialItems.map((item) => item.id)),
+    )
+  }
+
+  async function restoreSelected() {
+    if (!selectedIds.size) return
     setPending(true)
     setMessage('')
-    const response = await fetch(`/api/studio/articles/${item.id}`, {
-      method: 'DELETE',
-    })
-    setPending(false)
-    if (!response.ok) {
-      setMessage('永久删除失败，请重试。')
-      return
+    try {
+      const response = await fetch('/api/studio/articles/bulk-restore', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ids: [...selectedIds] }),
+      })
+      const payload = (await response.json().catch(() => ({}))) as {
+        restored?: number
+        error?: string
+      }
+      if (!response.ok) {
+        setMessage(
+          payload.error === 'FORBIDDEN_ARTICLE'
+            ? '部分章节已无权恢复，请刷新后重试。'
+            : '恢复失败，请重试。',
+        )
+        return
+      }
+      setMessage(
+        `已恢复 ${payload.restored ?? selectedIds.size} 个章节为未发布草稿。`,
+      )
+      resetSelection()
+      router.refresh()
+    } catch {
+      setMessage('恢复失败，请重试。')
+    } finally {
+      setPending(false)
     }
-    setDeleteTarget(null)
-    setMessage('章节已永久删除')
-    router.refresh()
+  }
+
+  async function permanentlyDeleteSelected() {
+    if (!selectedIds.size) return
+    setPending(true)
+    setMessage('')
+    try {
+      const response = await fetch('/api/studio/articles/bulk-delete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ids: [...selectedIds] }),
+      })
+      const payload = (await response.json().catch(() => ({}))) as {
+        deleted?: number
+        error?: string
+      }
+      if (!response.ok) {
+        setMessage(
+          payload.error === 'INVALID_TRASH_SELECTION'
+            ? '部分章节已不在回收站，请刷新后重试。'
+            : '永久删除失败，请重试。',
+        )
+        return
+      }
+      setMessage(
+        `已永久删除 ${payload.deleted ?? selectedIds.size} 个章节。`,
+      )
+      resetSelection()
+      router.refresh()
+    } catch {
+      setMessage('永久删除失败，请重试。')
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -77,8 +147,8 @@ export function TrashManager({
           <h1>回收站</h1>
           <p>
             {isOwner
-              ? '站主可以查看所有协作者移入的章节。章节保留 30 天，恢复后需要重新发布。'
-              : '这里只显示你移入回收站的章节。章节保留 30 天，恢复后需要重新发布。'}
+              ? '集中选择章节后批量恢复，或永久删除。内容保留 30 天，恢复后需要重新发布。'
+              : '集中选择你移入的章节后批量恢复。内容保留 30 天，恢复后需要重新发布。'}
           </p>
         </div>
       </header>
@@ -89,18 +159,117 @@ export function TrashManager({
         </p>
       ) : null}
 
+      {initialItems.length ? (
+        <div className="studio-trash-toolbar">
+          <div className="studio-trash-toolbar-main">
+            <div className="studio-trash-toolbar-count">
+              <strong>{initialItems.length}</strong>
+              <span>个章节等待处理</span>
+            </div>
+            <button
+              type="button"
+              className={`studio-delete-mode-button${
+                selectionMode ? ' is-active' : ''
+              }`}
+              aria-pressed={selectionMode}
+              disabled={pending}
+              onClick={toggleSelectionMode}
+            >
+              {selectionMode ? <X size={16} /> : <CheckSquare2 size={16} />}
+              {selectionMode ? '退出选择' : '集中操作'}
+            </button>
+          </div>
+
+          {selectionMode ? (
+            <div className="studio-selection-bar">
+              <div className="studio-selection-summary" aria-live="polite">
+                <span className="studio-selection-count">
+                  {selectedIds.size}
+                </span>
+                <span>
+                  {selectedIds.size
+                    ? `已选择 ${selectedIds.size} 个章节`
+                    : '请选择要处理的章节'}
+                </span>
+                <span className="studio-selection-hint">
+                  点击章节行或左侧圆框进行选择
+                </span>
+              </div>
+              <div className="studio-selection-actions">
+                <button
+                  type="button"
+                  className="studio-secondary-button"
+                  disabled={pending || !initialItems.length}
+                  onClick={toggleSelectAll}
+                >
+                  {allSelected ? '取消全选' : '全选全部'}
+                </button>
+                <button
+                  type="button"
+                  className="studio-primary-button"
+                  disabled={!selectedIds.size || pending}
+                  onClick={() => void restoreSelected()}
+                >
+                  <RotateCcw size={16} />
+                  恢复所选
+                </button>
+                {canDelete ? (
+                  <button
+                    type="button"
+                    className="studio-danger-button"
+                    disabled={!selectedIds.size || pending}
+                    onClick={() => setDeleteOpen(true)}
+                  >
+                    <Trash2 size={16} />
+                    永久删除
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="studio-trash-list">
         {initialItems.map((item) => {
           const daysLeft = Math.max(
             0,
             30 -
               Math.floor(
-                (now - new Date(item.trashedAt ?? '').getTime()) /
+                (now - parseDatabaseDateTime(item.trashedAt ?? '').getTime()) /
                   86_400_000,
               ),
           )
+          const selected = selectedIds.has(item.id)
+
           return (
-            <article key={item.id} className="studio-trash-row">
+            <article
+              key={item.id}
+              className={[
+                'studio-trash-row',
+                selectionMode ? 'is-selecting' : '',
+                selected ? 'is-selected' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={
+                selectionMode ? () => toggleSelected(item.id) : undefined
+              }
+            >
+              {selectionMode ? (
+                <label
+                  className="studio-row-checkbox"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    aria-label={`选择 ${item.title}`}
+                    onChange={() => toggleSelected(item.id)}
+                  />
+                  <span aria-hidden="true" />
+                </label>
+              ) : null}
               <span className="studio-trash-icon">
                 <Trash2 size={19} />
               </span>
@@ -117,30 +286,6 @@ export function TrashManager({
                 ) : null}
                 <span>{daysLeft} 天后永久删除</span>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  className="studio-icon-button"
-                  disabled={pending}
-                  onClick={() => void restore(item.id)}
-                  aria-label="恢复章节"
-                  title="恢复章节"
-                >
-                  <RotateCcw size={19} />
-                </button>
-                {canDelete ? (
-                  <button
-                    type="button"
-                    className="studio-icon-button hover:!text-[var(--rust)]"
-                    disabled={pending}
-                    onClick={() => setDeleteTarget(item)}
-                    aria-label="永久删除章节"
-                    title="永久删除章节"
-                  >
-                    <Trash2 size={19} />
-                  </button>
-                ) : null}
-              </div>
             </article>
           )
         })}
@@ -156,17 +301,21 @@ export function TrashManager({
       </div>
 
       <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
-        }}
-        title="永久删除这个章节？"
-        description="章节正文、全部历史版本和原网址都会被删除，这个操作无法撤销。"
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={
+          selectedIds.size > 1
+            ? '永久删除所选章节？'
+            : '永久删除这个章节？'
+        }
+        description={
+          selectedIds.size > 1
+            ? `所选的 ${selectedIds.size} 个章节及其全部历史版本、原网址都会被删除，这个操作无法撤销。`
+            : '章节正文、全部历史版本和原网址都会被删除，这个操作无法撤销。'
+        }
         confirmLabel="永久删除"
         pending={pending}
-        onConfirm={() => {
-          if (deleteTarget) void permanentlyDelete(deleteTarget)
-        }}
+        onConfirm={() => void permanentlyDeleteSelected()}
       />
     </div>
   )
