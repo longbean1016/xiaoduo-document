@@ -34,6 +34,7 @@ export function CodeBlockView({
     sourceMode.language === language
       ? sourceMode.showSource
       : !isMermaid
+  const lineCount = Math.max(1, node.textContent.split('\n').length)
 
   return (
     <NodeViewWrapper
@@ -95,7 +96,21 @@ export function CodeBlockView({
         ) : null}
       </div>
 
-      <div className={cn(!showSource && 'editor-code-block-source-hidden')}>
+      <div
+        className={cn(
+          'editor-code-block-body',
+          !showSource && 'editor-code-block-source-hidden',
+        )}
+      >
+        <div
+          className="editor-code-line-numbers"
+          contentEditable={false}
+          aria-hidden="true"
+        >
+          {Array.from({ length: lineCount }, (_, index) => (
+            <span key={index}>{index + 1}</span>
+          ))}
+        </div>
         <pre className="hljs">
           <NodeViewContent<'code'>
             as="code"

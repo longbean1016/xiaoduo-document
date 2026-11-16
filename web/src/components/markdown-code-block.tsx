@@ -3,37 +3,93 @@ import type { ReactNode } from 'react'
 import { MermaidDiagram } from '@/components/mermaid-diagram'
 import { lowlight } from '@/lib/code-highlight'
 
+type HighlightToken = {
+  className?: string
+  text: string
+}
+
 function normalizeLanguage(language: string) {
   return language.trim().toLowerCase().split(/\s+/)[0] || 'text'
 }
 
-function renderHighlightedNode(node: RootContent, key: string): ReactNode {
-  if (node.type === 'text') return node.value
-  if (node.type !== 'element') return null
+function flattenHighlightedNode(
+  node: RootContent,
+  parentClassNames: string[] = [],
+): HighlightToken[] {
+  if (node.type === 'text') {
+    return [
+      {
+        className: parentClassNames.join(' ') || undefined,
+        text: node.value,
+      },
+    ]
+  }
+  if (node.type !== 'element') return []
 
-  const className = Array.isArray(node.properties?.className)
-    ? node.properties.className.join(' ')
-    : undefined
-  return (
-    <span key={key} className={className}>
-      {node.children.map((child, index) =>
-        renderHighlightedNode(child, `${key}-${index}`),
-      )}
-    </span>
+  const ownClassNames = Array.isArray(node.properties?.className)
+    ? node.properties.className.map(String)
+    : []
+  const classNames = [...parentClassNames, ...ownClassNames]
+  return node.children.flatMap((child) =>
+    flattenHighlightedNode(child, classNames),
   )
 }
 
-function highlightedCode(code: string, language: string) {
-  if (!lowlight.registered(language)) return code
+function highlightedTokens(code: string, language: string) {
+  if (!lowlight.registered(language)) return [{ text: code }]
   try {
     return lowlight
       .highlight(language, code)
-      .children.map((node, index) =>
-        renderHighlightedNode(node, `token-${index}`),
-      )
+      .children.flatMap((node) => flattenHighlightedNode(node))
   } catch {
-    return code
+    return [{ text: code }]
   }
+}
+
+function highlightedLines(code: string, language: string) {
+  const lines: ReactNode[][] = [[]]
+  highlightedTokens(code, language).forEach((token, tokenIndex) => {
+    token.text.split('\n').forEach((part, partIndex) => {
+      if (partIndex > 0) lines.push([])
+      if (!part) return
+      lines.at(-1)?.push(
+        <span
+          key={`${tokenIndex}-${partIndex}`}
+          className={token.className}
+        >
+          {part}
+        </span>,
+      )
+    })
+  })
+  return lines
+}
+
+function codeLanguageClass(language: string) {
+  return language.replace(/[^a-z0-9_-]/g, '') || 'text'
+}
+
+function MarkdownCodeText({
+  code,
+  language,
+}: {
+  code: string
+  language: string
+}) {
+  const lines = highlightedLines(code.replace(/\n+$/, ''), language)
+  return (
+    <code className={`hljs language-${codeLanguageClass(language)}`}>
+      {lines.map((line, index) => (
+        <span
+          key={index}
+          className="markdown-code-line"
+          data-line={index + 1}
+        >
+          <span className="markdown-code-line-content">{line}</span>
+        </span>
+      ))}
+    </code>
+  )
 }
 
 export function MarkdownCodeBlock({
@@ -48,8 +104,6 @@ export function MarkdownCodeBlock({
     return <MermaidDiagram chart={code} />
   }
 
-  const languageClass =
-    normalized.replace(/[^a-z0-9_-]/g, '') || 'text'
   return (
     <div
       className="markdown-code-block"
@@ -57,9 +111,7 @@ export function MarkdownCodeBlock({
     >
       <div className="markdown-code-block-header">{normalized}</div>
       <pre>
-        <code className={`hljs language-${languageClass}`}>
-          {highlightedCode(code, normalized)}
-        </code>
+        <MarkdownCodeText code={code} language={normalized} />
       </pre>
     </div>
   )

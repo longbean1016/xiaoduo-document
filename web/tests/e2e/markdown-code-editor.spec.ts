@@ -1,4 +1,6 @@
 import './database-isolation'
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import { expect, test } from '@playwright/test'
 import { seedTestDatabase } from '../seed-test-db'
 
@@ -141,4 +143,95 @@ test('code block header accepts manual language and typed fences set language', 
   await expect(
     body.locator('.editor-code-block').getByLabel('代码语言'),
   ).toHaveValue('text')
+})
+
+test('editor code blocks use compact aligned metrics and line numbers', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData(
+      'text/plain',
+      '```python\nimport sys\n\ndef solution():\n  return []\n```\n',
+    )
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+
+  const block = body.locator('.editor-code-block')
+  const code = block.locator('pre code')
+  const lineNumbers = block.locator('.editor-code-line-numbers span')
+  await expect(lineNumbers).toHaveText(['1', '2', '3', '4'])
+  await expect(code).not.toContainText('1')
+  expect(await code.evaluate((element) => getComputedStyle(element).fontSize)).toBe(
+    '13px',
+  )
+  expect(
+    await code.evaluate((element) => getComputedStyle(element).lineHeight),
+  ).toBe('20.8px')
+  expect(
+    await block.locator('pre').evaluate((element) => getComputedStyle(element).padding),
+  ).toBe('12px 14px')
+  expect(
+    await block.evaluate(
+      (element) => getComputedStyle(element).borderRadius,
+    ),
+  ).toBe('6px')
+  expect(
+    await block
+      .locator('.editor-code-block-header')
+      .evaluate((element) => getComputedStyle(element).minHeight),
+  ).toBe('32px')
+  expect(
+    await block
+      .locator('.editor-code-line-numbers')
+      .evaluate((element) => getComputedStyle(element).width),
+  ).toBe('42px')
+  expect(
+    await block.evaluate((element) => {
+      const codeElement = element.querySelector('pre code')
+      if (!codeElement) return -1
+      return Math.round(
+        codeElement.getBoundingClientRect().left -
+          element.getBoundingClientRect().left,
+      )
+    }),
+  ).toBe(57)
+
+  const captureDir = process.env.MARKDOWN_CODE_CAPTURE_DIR
+  if (captureDir) await mkdir(captureDir, { recursive: true })
+  for (const width of [1280, 768, 375]) {
+    await page.setViewportSize({ width, height: width === 375 ? 812 : 900 })
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((nextTheme) => {
+        document.documentElement.dataset.theme = nextTheme
+      }, theme)
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.documentElement.scrollWidth),
+        )
+        .toBeLessThanOrEqual(width)
+      if (captureDir) {
+        await page.screenshot({
+          path: path.join(captureDir, `${width}-${theme}.png`),
+          fullPage: true,
+        })
+      }
+    }
+  }
 })

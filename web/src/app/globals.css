@@ -45,6 +45,14 @@
   --code-comment: #6e7781;
   --code-name: #116329;
   --code-meta: #0550ae;
+  --code-font-size: 13px;
+  --code-line-height: 1.6;
+  --code-block-padding-block: 12px;
+  --code-block-padding-inline: 14px;
+  --code-header-height: 32px;
+  --code-gutter-width: 42px;
+  --code-block-radius: 6px;
+  --code-block-margin: 1.25em;
   --display:
     "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
   --space-1: 4px;
@@ -2697,10 +2705,10 @@ select:focus {
 }
 
 .editor-code-block {
-  margin: 1.6em 0;
+  margin: var(--code-block-margin) 0;
   overflow: hidden;
   border: 1px solid var(--code-border);
-  border-radius: 7px;
+  border-radius: var(--code-block-radius);
   background: var(--code-surface);
   color: var(--code-ink);
 }
@@ -2712,13 +2720,13 @@ select:focus {
 
 .editor-code-block-header {
   display: flex;
-  min-height: 34px;
+  min-height: var(--code-header-height);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--code-border);
   background: var(--code-header);
-  padding: 5px 8px 5px 12px;
+  padding: 0 12px;
   color: var(--code-muted);
   font: 11px/1.4 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
   letter-spacing: 0.04em;
@@ -2769,12 +2777,49 @@ select:focus {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
+.editor-code-block-body {
+  display: grid;
+  grid-template-columns: var(--code-gutter-width) minmax(0, 1fr);
+  background: var(--code-surface);
+}
+
+.editor-code-line-numbers {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--code-border);
+  padding: var(--code-block-padding-block) 10px
+    var(--code-block-padding-block) 0;
+  color: var(--code-muted);
+  font: var(--code-font-size) / var(--code-line-height) "JetBrains Mono",
+    "Cascadia Code", Consolas, monospace;
+  text-align: right;
+  user-select: none;
+}
+
+.editor-code-line-numbers span {
+  display: block;
+  height: calc(var(--code-font-size) * var(--code-line-height));
+}
+
 .zhijian-prose .editor-code-block pre {
   margin: 0;
+  overflow-x: auto;
   border: 0;
   border-radius: 0;
   background: var(--code-surface);
+  padding: var(--code-block-padding-block) var(--code-block-padding-inline);
   color: var(--code-ink);
+  font: var(--code-font-size) / var(--code-line-height) "JetBrains Mono",
+    "Cascadia Code", Consolas, monospace;
+}
+
+.zhijian-prose .editor-code-block pre code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  color: var(--code-ink);
+  font: inherit;
+  white-space: pre;
 }
 
 .editor-code-block-source-hidden {
@@ -3059,19 +3104,21 @@ select:focus {
 }
 
 .markdown-code-block {
-  margin: 1.6em 0;
+  margin: var(--code-block-margin) 0;
   overflow: hidden;
   border: 1px solid var(--code-border);
-  border-radius: 6px;
+  border-radius: var(--code-block-radius);
   background: var(--code-surface);
   color: var(--code-ink);
 }
 
 .markdown-code-block-header {
-  min-height: 34px;
+  display: flex;
+  min-height: var(--code-header-height);
+  align-items: center;
   border-bottom: 1px solid var(--code-border);
   background: var(--code-header);
-  padding: 8px 12px;
+  padding: 0 12px;
   color: var(--code-muted);
   font: 11px/1.45 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
   letter-spacing: 0.04em;
@@ -3081,7 +3128,8 @@ select:focus {
   margin: 0;
   border-radius: 0;
   background: var(--code-surface);
-  padding: 14px 16px;
+  padding: var(--code-block-padding-block) var(--code-block-padding-inline)
+    var(--code-block-padding-block) 0;
   color: var(--code-ink);
 }
 
@@ -3090,8 +3138,38 @@ select:focus {
   width: max-content;
   min-width: 100%;
   color: var(--code-ink);
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: var(--code-font-size);
+  line-height: var(--code-line-height);
+  white-space: pre;
+}
+
+.markdown-code-line {
+  display: flex;
+  min-width: max-content;
+  min-height: calc(var(--code-font-size) * var(--code-line-height));
+}
+
+.markdown-code-line::before {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: var(--code-gutter-width);
+  flex: 0 0 var(--code-gutter-width);
+  border-right: 1px solid var(--code-border);
+  background: var(--code-surface);
+  margin-right: var(--code-block-padding-inline);
+  padding-right: 10px;
+  color: var(--code-muted);
+  content: attr(data-line);
+  font: var(--code-font-size) / var(--code-line-height) "JetBrains Mono",
+    "Cascadia Code", Consolas, monospace;
+  text-align: right;
+  user-select: none;
+}
+
+.markdown-code-line-content {
+  display: block;
+  min-height: calc(var(--code-font-size) * var(--code-line-height));
   white-space: pre;
 }
 

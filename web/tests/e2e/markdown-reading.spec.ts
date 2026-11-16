@@ -63,6 +63,67 @@ test('public reader renders rich Markdown, code and Mermaid', async ({
   await expect(article.locator('table')).toContainText('支持')
   await expect(article.locator('pre code.language-java')).toBeVisible()
   await expect(article.locator('.hljs-keyword').first()).toBeVisible()
+  const codeLines = article
+    .locator('.markdown-code-block')
+    .first()
+    .locator('.markdown-code-line')
+  await expect(codeLines).toHaveCount(5)
+  await expect
+    .poll(() =>
+      codeLines.evaluateAll((lines) =>
+        lines.map((line) => line.getAttribute('data-line')),
+      ),
+    )
+    .toEqual(['1', '2', '3', '4', '5'])
+  expect(
+    await article
+      .locator('pre code.language-java')
+      .evaluate((element) => getComputedStyle(element).fontSize),
+  ).toBe('13px')
+  expect(
+    await article
+      .locator('pre code.language-java')
+      .evaluate((element) => getComputedStyle(element).lineHeight),
+  ).toBe('20.8px')
+  expect(
+    await article
+      .locator('.markdown-code-block pre')
+      .first()
+      .evaluate((element) => getComputedStyle(element).paddingLeft),
+  ).toBe('0px')
+  expect(
+    await article
+      .locator('.markdown-code-block')
+      .first()
+      .evaluate((element) => getComputedStyle(element).borderRadius),
+  ).toBe('6px')
+  expect(
+    await article
+      .locator('.markdown-code-block-header')
+      .first()
+      .evaluate((element) => getComputedStyle(element).minHeight),
+  ).toBe('32px')
+  expect(
+    await article
+      .locator('.markdown-code-line')
+      .first()
+      .evaluate((element) => getComputedStyle(element, '::before').width),
+  ).toBe('42px')
+  expect(
+    await article
+      .locator('.markdown-code-block')
+      .first()
+      .evaluate((element) => {
+        const codeElement = element.querySelector(
+          '.markdown-code-line-content',
+        )
+        if (!codeElement) return -1
+        return Math.round(
+          codeElement.getBoundingClientRect().left -
+            element.getBoundingClientRect().left,
+        )
+      }),
+  ).toBe(57)
   await expect(
     article.locator('pre code.language-custom-unknown'),
   ).toContainText('unknown language stays readable')
