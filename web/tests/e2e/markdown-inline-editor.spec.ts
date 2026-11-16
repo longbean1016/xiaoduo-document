@@ -111,3 +111,22 @@ test('plain text with unmatched markers stays literal', async ({ page }) => {
   await expect(body).toContainText('这是普通文本：2 * 3 = 6')
   await expect(body.locator('strong, em, code, s')).toHaveCount(0)
 })
+
+test('literal bold inserted without keyboard rules is normalized', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('**中文粗体**')
+  await expect(body.locator('strong')).toHaveText('中文粗体')
+
+  await body.fill('这是 **混合粗体** 文本')
+  await expect(body.locator('strong')).toHaveText('混合粗体')
+  await expect(body).not.toContainText('**')
+})

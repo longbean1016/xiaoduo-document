@@ -47,6 +47,7 @@ import {
   Save,
   Send,
   Strikethrough,
+  Table2,
   Trash2,
   Underline,
   Undo2,
@@ -66,6 +67,7 @@ import {
   codeLanguageLabel,
   codeLanguageOptions,
 } from '@/lib/code-highlight'
+import { normalizeCurrentMarkdownBlock } from '@/lib/markdown-normalize'
 import type { MarkdownDiffChange } from '@/lib/markdown-diff'
 import { cn } from '@/lib/utils'
 
@@ -190,6 +192,9 @@ export function ChapterEditor({
   const savingRef = useRef(false)
   const conflictRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const normalizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
   const saveNowRef = useRef<(force?: boolean) => Promise<boolean>>(
     async () => false,
   )
@@ -263,10 +268,19 @@ export function ChapterEditor({
     const onUpdate = () => {
       setDraftTick((current) => current + 1)
       markDirty()
+      if (normalizeTimerRef.current) {
+        clearTimeout(normalizeTimerRef.current)
+      }
+      normalizeTimerRef.current = setTimeout(() => {
+        normalizeCurrentMarkdownBlock(editor)
+      }, 80)
     }
     editor.on('update', onUpdate)
     return () => {
       editor.off('update', onUpdate)
+      if (normalizeTimerRef.current) {
+        clearTimeout(normalizeTimerRef.current)
+      }
       editorRef.current = null
     }
   }, [editor, markDirty])
@@ -1841,6 +1855,18 @@ function StudioToolbar({
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
           <Code2 size={19} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="插入表格"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+        >
+          <Table2 size={19} />
         </ToolbarButton>
         {selectionState.codeBlock ? (
           <CodeLanguageMenu

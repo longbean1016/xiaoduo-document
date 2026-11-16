@@ -46,6 +46,7 @@ import {
   Save,
   Send,
   Strikethrough,
+  Table2,
   Trash2,
   Underline,
   Undo2,
@@ -72,6 +73,7 @@ import {
   buildMarkdownDiff,
   type MarkdownDiffChange,
 } from '../../lib/markdownDiff'
+import { normalizeCurrentMarkdownBlock } from '../../lib/markdownNormalize'
 import {
   extractPlainText,
   formatClock,
@@ -159,6 +161,7 @@ export function StudioNotePage() {
   const editorWorkspaceRef = useRef<HTMLDivElement | null>(null)
   const tocSelectionLockRef = useRef(false)
   const tocSelectionTimerRef = useRef<number | null>(null)
+  const normalizeTimerRef = useRef<number | null>(null)
 
   const markDirty = useCallback(() => {
     dirtyRef.current = true
@@ -213,6 +216,12 @@ export function StudioNotePage() {
         if (applyingVersionRef.current) return
         setDraftTick((current) => current + 1)
         markDirty()
+        if (normalizeTimerRef.current) {
+          window.clearTimeout(normalizeTimerRef.current)
+        }
+        normalizeTimerRef.current = window.setTimeout(() => {
+          normalizeCurrentMarkdownBlock(editor)
+        }, 80)
       },
     },
     [canEditNote, noteId],
@@ -308,6 +317,9 @@ export function StudioNotePage() {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
       if (tocSelectionTimerRef.current) {
         window.clearTimeout(tocSelectionTimerRef.current)
+      }
+      if (normalizeTimerRef.current) {
+        window.clearTimeout(normalizeTimerRef.current)
       }
     }
   }, [noteId])
@@ -2082,6 +2094,18 @@ function StudioToolbar({
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
           <Code2 size={19} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="插入表格"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+        >
+          <Table2 size={19} />
         </ToolbarButton>
         {selectionState.codeBlock ? (
           <CodeLanguageMenu

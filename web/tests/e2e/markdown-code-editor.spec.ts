@@ -37,9 +37,33 @@ test('editor highlights fenced code and allows changing its language', async ({
   const code = body.locator('pre code')
   await expect(code).toContainText('const answer: number = 42')
   await expect(code.locator('.hljs-keyword').first()).toHaveText('const')
+  const codeBlock = body.locator('.editor-code-block')
+  expect(
+    await codeBlock.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    ),
+  ).toBe('rgb(241, 248, 244)')
+  expect(
+    await codeBlock.locator('pre').evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    ),
+  ).toBe('rgb(241, 248, 244)')
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = 'dark'
+  })
+  expect(
+    await codeBlock.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    ),
+  ).toBe('rgb(23, 32, 27)')
+  expect(
+    await codeBlock.locator('pre').evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    ),
+  ).toBe('rgb(23, 32, 27)')
   await code.click()
 
-  const languageButton = page.getByRole('button', {
+  const languageButton = codeBlock.getByRole('button', {
     name: '代码语言',
   })
   await expect(languageButton).toBeVisible()
@@ -61,4 +85,55 @@ test('editor highlights fenced code and allows changing its language', async ({
   await expect(
     page.getByRole('textbox', { name: '章节正文' }).locator('pre code'),
   ).toHaveClass(/language-javascript/)
+
+  for (const width of [1280, 768, 375]) {
+    await page.setViewportSize({ width, height: width === 375 ? 812 : 900 })
+    for (const [theme, background] of [
+      ['light', 'rgb(241, 248, 244)'],
+      ['dark', 'rgb(23, 32, 27)'],
+    ] as const) {
+      await page.evaluate((nextTheme) => {
+        document.documentElement.dataset.theme = nextTheme
+      }, theme)
+      expect(
+        await codeBlock.evaluate(
+          (element) => getComputedStyle(element).backgroundColor,
+        ),
+      ).toBe(background)
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth,
+          ),
+        )
+        .toBeLessThanOrEqual(width)
+    }
+  }
+})
+
+test('code block header selects language and typed fences set language', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('```python ')
+  await page.keyboard.type('print("hello_world!")')
+  const code = body.locator('pre code')
+  await expect(code).toHaveClass(/language-python/)
+
+  const block = body.locator('.editor-code-block')
+  const languageButton = block.getByRole('button', { name: '代码语言' })
+  await expect(languageButton).toBeVisible()
+  await languageButton.click()
+  await page.getByRole('menuitem', { name: 'TypeScript' }).click()
+  await expect(code).toHaveClass(/language-typescript/)
+  await expect(block.getByText('TypeScript', { exact: true })).toBeVisible()
 })

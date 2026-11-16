@@ -32,6 +32,16 @@
   --gold: #9f7a3f;
   --highlight: #f0dfaa;
   --shadow: rgba(25, 39, 31, 0.09);
+  --code-surface: #f1f8f4;
+  --code-header: #e5f1e9;
+  --code-border: #c8ddd1;
+  --code-ink: #1d352b;
+  --code-muted: #5e7569;
+  --code-keyword: #0f766e;
+  --code-string: #8a5a00;
+  --code-number: #1f5f8b;
+  --code-variable: #9d3f2b;
+  --code-comment: #708076;
   --display:
     "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
   --space-1: 4px;
@@ -477,6 +487,16 @@
   --gold: #d2a75d;
   --highlight: #604d25;
   --shadow: rgba(0, 0, 0, 0.3);
+  --code-surface: #17201b;
+  --code-header: #1d2a23;
+  --code-border: #34483c;
+  --code-ink: #d8e5dc;
+  --code-muted: #94a79b;
+  --code-keyword: #8bc7a8;
+  --code-string: #e1c48c;
+  --code-number: #9bbce0;
+  --code-variable: #d9998c;
+  --code-comment: #87978c;
 }
 
 * {
@@ -2615,7 +2635,7 @@ select:focus {
 
 .zhijian-prose pre code .hljs-comment,
 .zhijian-prose pre code .hljs-quote {
-  color: #87978c;
+  color: var(--code-comment);
 }
 
 .zhijian-prose pre code .hljs-keyword,
@@ -2623,7 +2643,7 @@ select:focus {
 .zhijian-prose pre code .hljs-literal,
 .zhijian-prose pre code .hljs-section,
 .zhijian-prose pre code .hljs-link {
-  color: #8bc7a8;
+  color: var(--code-keyword);
 }
 
 .zhijian-prose pre code .hljs-string,
@@ -2634,7 +2654,7 @@ select:focus {
 .zhijian-prose pre code .hljs-symbol,
 .zhijian-prose pre code .hljs-bullet,
 .zhijian-prose pre code .hljs-addition {
-  color: #e1c48c;
+  color: var(--code-string);
 }
 
 .zhijian-prose pre code .hljs-number,
@@ -2642,14 +2662,14 @@ select:focus {
 .zhijian-prose pre code .hljs-built_in,
 .zhijian-prose pre code .hljs-builtin-name,
 .zhijian-prose pre code .hljs-params {
-  color: #9bbce0;
+  color: var(--code-number);
 }
 
 .zhijian-prose pre code .hljs-variable,
 .zhijian-prose pre code .hljs-template-variable,
 .zhijian-prose pre code .hljs-regexp,
 .zhijian-prose pre code .hljs-deletion {
-  color: #d9998c;
+  color: var(--code-variable);
 }
 
 .zhijian-prose pre code .hljs-emphasis {
@@ -2663,10 +2683,10 @@ select:focus {
 .editor-code-block {
   margin: 1.6em 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--line-strong) 82%, transparent);
+  border: 1px solid var(--code-border);
   border-radius: 7px;
-  background: #17201b;
-  color: #d8e5dc;
+  background: var(--code-surface);
+  color: var(--code-ink);
 }
 
 .editor-code-block.is-selected {
@@ -2680,9 +2700,10 @@ select:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--code-border);
+  background: var(--code-header);
   padding: 5px 8px 5px 12px;
-  color: rgba(226, 239, 230, 0.68);
+  color: var(--code-muted);
   font: 11px/1.4 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
   letter-spacing: 0.04em;
 }
@@ -2694,20 +2715,21 @@ select:focus {
   gap: 5px;
   border-radius: 4px;
   padding: 0 7px;
-  color: rgba(226, 239, 230, 0.78);
+  color: var(--code-muted);
   font-size: 11px;
 }
 
 .editor-code-block-header button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
+  background: color-mix(in srgb, var(--code-ink) 8%, transparent);
+  color: var(--code-ink);
 }
 
-.editor-code-block pre {
+.zhijian-prose .editor-code-block pre {
   margin: 0;
   border: 0;
   border-radius: 0;
-  background: transparent;
+  background: var(--code-surface);
+  color: var(--code-ink);
 }
 
 .editor-code-block-source-hidden {
