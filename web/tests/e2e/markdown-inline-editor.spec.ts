@@ -1,12 +1,18 @@
 import './database-isolation'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { seedTestDatabase } from '../seed-test-db'
 
 test.beforeEach(async () => {
   await seedTestDatabase()
 })
+
+function markerValues(markers: Locator) {
+  return markers.evaluateAll((elements) =>
+    elements.map((element) => element.getAttribute('data-marker-text') ?? ''),
+  )
+}
 
 test('editor renders pasted inline Markdown as rich text', async ({
   page,
@@ -157,7 +163,7 @@ test('contextual Markdown markers reveal and close a bold range', async ({
   const strong = body.locator('strong')
   await expect(strong).toHaveText('这是粗体')
   await expect
-    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .poll(() => markerValues(body.locator('.markdown-context-marker')))
     .toEqual(['**', '**'])
   const savedDraft = (await saveRequestPromise).postDataJSON() as {
     markdown: string
@@ -198,7 +204,7 @@ test('contextual Markdown markers reveal and close a bold range', async ({
 
   await strong.click()
   await expect
-    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .poll(() => markerValues(body.locator('.markdown-context-marker')))
     .toEqual(['**', '**'])
 
   await page.keyboard.press('End')
@@ -224,7 +230,7 @@ test('contextual Markdown markers cover common inline marks', async ({
   await page.keyboard.type('*斜体* ~~删除线~~ `行内代码` 普通文本')
 
   const markerText = () =>
-    body.locator('.markdown-context-marker').allTextContents()
+    markerValues(body.locator('.markdown-context-marker'))
   await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
 
   await body.locator('em').click()
@@ -262,9 +268,7 @@ test('contextual Markdown markers reveal link syntax', async ({ page }) => {
   await expect(link).toBeVisible()
   await link.click()
   await expect
-    .poll(() =>
-      body.locator('.markdown-context-marker').allTextContents(),
-    )
+    .poll(() => markerValues(body.locator('.markdown-context-marker')))
     .toEqual(['[', '](https://example.com)'])
 })
 
@@ -297,7 +301,7 @@ test('contextual Markdown markers reveal active heading and quote prefixes', asy
   })
 
   const markerText = () =>
-    body.locator('.markdown-context-marker').allTextContents()
+    markerValues(body.locator('.markdown-context-marker'))
   await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
 
   await body.getByRole('heading', { name: '上下文标题' }).click()
@@ -338,7 +342,7 @@ test('contextual heading and quote markers can be deleted', async ({
   await body.getByRole('heading', { name: '标题' }).click()
   await page.keyboard.press('Home')
   await expect
-    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .poll(() => markerValues(body.locator('.markdown-context-marker')))
     .toEqual(['## '])
   await page.keyboard.press('Backspace')
   await expect(body.getByRole('heading', { name: '标题' })).toHaveCount(0)
@@ -347,7 +351,7 @@ test('contextual heading and quote markers can be deleted', async ({
   await body.getByText('引用', { exact: true }).click()
   await page.keyboard.press('Home')
   await expect
-    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .poll(() => markerValues(body.locator('.markdown-context-marker')))
     .toEqual(['> '])
   await page.keyboard.press('Backspace')
   await expect(body.locator('blockquote')).toHaveCount(0)
@@ -421,11 +425,150 @@ test('ArrowRight and Enter exit an inline mark at the last line', async ({
 
   await strong.click()
   await page.keyboard.press('End')
+  const paragraphsBefore = await body.locator(':scope > p').count()
   await page.keyboard.press('ArrowRight')
+  await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
   await page.keyboard.press('Enter')
+  await expect(body.locator(':scope > p')).toHaveCount(
+    paragraphsBefore + 1,
+  )
   await page.keyboard.type('下一行普通文本')
 
   await expect(strong).toHaveText('最后一行粗体')
   await expect(body).toContainText('下一行普通文本')
   await expect(strong).not.toContainText('下一行普通文本')
+})
+
+test('ArrowRight exits every common inline mark on the same line', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  const cases = [
+    { content: '斜体内容', markdown: '*斜体内容*', selector: 'em' },
+    {
+      content: '删除线内容',
+      markdown: '~~删除线内容~~',
+      selector: 's',
+    },
+    {
+      content: '行内代码内容',
+      markdown: '`行内代码内容`',
+      selector: 'code',
+    },
+  ]
+
+  for (const item of cases) {
+    await body.fill('')
+    await body.click()
+    await page.keyboard.type(item.markdown)
+
+    const marked = body.locator(item.selector)
+    await expect(marked).toHaveText(item.content)
+    await marked.click()
+    await page.keyboard.press('End')
+    const paragraphsBefore = await body.locator(':scope > p').count()
+    await page.keyboard.press('ArrowRight')
+    await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+    await page.keyboard.type('同排普通文本')
+
+    await expect(marked).toHaveText(item.content)
+    await expect(body).toContainText(`${item.content}同排普通文本`)
+  }
+
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('链接内容')
+  await page.keyboard.press('Control+A')
+  await page.getByRole('button', { name: '链接' }).click()
+  const dialog = page.getByRole('dialog', { name: '添加链接' })
+  await dialog.getByLabel('链接地址').fill('https://example.com')
+  await dialog.getByRole('button', { name: '应用' }).click()
+
+  const link = body.getByRole('link', { name: '链接内容' })
+  const paragraphsBefore = await body.locator(':scope > p').count()
+  await link.click()
+  await page.keyboard.press('Control+End')
+  await page.keyboard.press('ArrowRight')
+  await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+  await page.keyboard.type('同排普通文本')
+
+  await expect(link).toHaveText('链接内容')
+  await expect(body).toHaveText(/链接内容\s*同排普通文本/)
+})
+
+test('ArrowLeft at the first heading creates a writable paragraph above it', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.getByRole('button', { name: '二级标题' }).click()
+  await page.keyboard.type('第二节')
+
+  const heading = body.getByRole('heading', { name: '第二节' })
+  await heading.click()
+  await page.keyboard.press('Home')
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.type('标题前面的普通内容')
+
+  await expect(body).toContainText('标题前面的普通内容')
+  await expect(heading).toBeVisible()
+  await expect
+    .poll(() =>
+      heading.evaluate(
+        (element) => element.previousElementSibling?.tagName ?? '',
+      ),
+    )
+    .toBe('P')
+})
+
+test('ArrowUp at the first paragraph creates a writable paragraph above it', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('原来的第一段')
+  const originalBlock = body.getByText('原来的第一段', { exact: true })
+  await originalBlock.click()
+  await page.keyboard.press('Home')
+  await page.keyboard.press('Backspace')
+
+  const firstParagraph = body.getByText('原来的第一段', { exact: true })
+  await expect(firstParagraph).toHaveText('原来的第一段')
+  await firstParagraph.click()
+  await page.keyboard.press('Home')
+  await page.keyboard.press('ArrowUp')
+  await page.keyboard.type('段前普通内容')
+
+  await expect(body).toContainText('段前普通内容')
+  await expect
+    .poll(() =>
+      body.locator(':scope > p').first().evaluate(
+        (element) => element.textContent ?? '',
+      ),
+    )
+    .toContain('段前普通内容')
+  await expect(body).toContainText('原来的第一段')
 })

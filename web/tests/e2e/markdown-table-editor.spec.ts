@@ -91,7 +91,7 @@ test('editor supports pasted and inserted GFM tables', async ({
     .toBeLessThanOrEqual(375)
 })
 
-test('ArrowRight at a formatted paragraph creates a writable row before the table', async ({
+test('ArrowRight exits bold on the same line and Enter writes before the table', async ({
   page,
 }) => {
   await page.goto('/studio/login')
@@ -123,7 +123,11 @@ test('ArrowRight at a formatted paragraph creates a writable row before the tabl
   await expect(strong).toHaveText('结论')
   await strong.click()
   await page.keyboard.press('End')
+  const paragraphsBefore = await body.locator(':scope > p').count()
   await page.keyboard.press('ArrowRight')
+  await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+  await page.keyboard.type('同排普通文本')
+  await expect(body).toContainText('结论同排普通文本')
   await expect
     .poll(() =>
       body.locator('table').evaluate(
@@ -135,6 +139,9 @@ test('ArrowRight at a formatted paragraph creates a writable row before the tabl
     .toBe('P')
 
   await page.keyboard.press('Enter')
+  await expect(body.locator(':scope > p')).toHaveCount(
+    paragraphsBefore + 1,
+  )
   await page.keyboard.type('表格前普通行')
   await expect(body).toContainText('表格前普通行')
   await expect(strong).toHaveText('结论')

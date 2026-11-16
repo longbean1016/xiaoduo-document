@@ -4117,6 +4117,10 @@ select:focus {
   color: var(--code-muted);
 }
 
+.markdown-context-marker::before {
+  content: attr(data-marker-text);
+}
+
 .markdown-context-marker[data-side="open"] {
   margin-right: 0.08em;
 }

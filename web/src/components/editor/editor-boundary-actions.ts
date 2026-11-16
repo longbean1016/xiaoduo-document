@@ -30,31 +30,32 @@ export function handleEditorBoundaryKeyDown(
   view: EditorView,
   event: KeyboardEvent,
 ) {
-  if (event.key === 'ArrowRight' && view.state.selection.empty) {
+  if (
+    (event.key === 'ArrowLeft' || event.key === 'ArrowUp') &&
+    view.state.selection.empty
+  ) {
     const { $from } = view.state.selection
     if (
-      $from.parent.isTextblock &&
-      $from.parentOffset === $from.parent.content.size
+      $from.parentOffset === 0 &&
+      ($from.pos === 1 || $from.before($from.depth) === 0)
     ) {
-      const nextPosition = $from.after($from.depth)
-      if (view.state.doc.nodeAt(nextPosition)?.type.name === 'table') {
-        const paragraph = view.state.schema.nodes.paragraph?.createAndFill()
-        if (paragraph) {
-          const transaction = view.state.tr.insert(nextPosition, paragraph)
-          transaction.setSelection(
-            TextSelection.near(
-              transaction.doc.resolve(nextPosition + 1),
-            ),
-          )
-          transaction.setStoredMarks([])
-          view.dispatch(transaction)
-          event.preventDefault()
-          return true
-        }
+      const paragraph = view.state.schema.nodes.paragraph?.createAndFill()
+      if (paragraph) {
+        const transaction = view.state.tr.insert(0, paragraph)
+        transaction.setSelection(
+          TextSelection.near(transaction.doc.resolve(1)),
+        )
+        transaction.setStoredMarks([])
+        view.dispatch(transaction)
+        event.preventDefault()
+        return true
       }
     }
   }
-  if (event.key !== 'Enter' || !isFirstTableCellStart(view.state)) {
+  if (
+    (event.key !== 'Enter' && event.key !== 'ArrowUp') ||
+    !isFirstTableCellStart(view.state)
+  ) {
     return false
   }
   const { state } = view

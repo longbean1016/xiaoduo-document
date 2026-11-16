@@ -50,7 +50,7 @@ function markerWidget(
     marker.dataset.side = side < 0 ? 'open' : 'close'
     marker.setAttribute('aria-hidden', 'true')
     marker.contentEditable = 'false'
-    marker.textContent = text
+    marker.dataset.markerText = text
     return marker
   }
 }
@@ -132,7 +132,7 @@ function buildDecorations(state: EditorState) {
         markerWidget(range.close, 1, range.markName),
         {
           key: `close-${range.key}-${range.to}`,
-          side: 1,
+          side: -1,
         },
       ),
     ]
@@ -178,14 +178,7 @@ function handleMarkerKeyDown(
       endingMark &&
       $from.parentOffset === $from.parent.content.size
     ) {
-      const nextPosition = $from.after($from.depth)
-      if (!$from.doc.nodeAt(nextPosition)) {
-        const transaction = state.tr.split($from.pos)
-        transaction.setStoredMarks([])
-        dispatch(transaction)
-      } else {
-        dispatch(state.tr.setStoredMarks([]))
-      }
+      dispatch(state.tr.setStoredMarks([]))
       return true
     }
     return false
