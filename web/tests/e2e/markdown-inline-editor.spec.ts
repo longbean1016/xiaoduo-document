@@ -1,4 +1,6 @@
 import './database-isolation'
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import { expect, test } from '@playwright/test'
 import { seedTestDatabase } from '../seed-test-db'
 
@@ -131,7 +133,9 @@ test('literal bold inserted without keyboard rules is normalized', async ({
   await expect(body).not.toContainText('**')
 })
 
-test('Markdown source dialog can edit after a bold range', async ({ page }) => {
+test('contextual Markdown markers reveal and close a bold range', async ({
+  page,
+}) => {
   await page.goto('/studio/login')
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
@@ -139,24 +143,169 @@ test('Markdown source dialog can edit after a bold range', async ({ page }) => {
   await expect(page).toHaveURL(/\/studio$/)
 
   await page.goto('/studio/notes/article-1')
-  await expect(page.getByRole('dialog', { name: 'Markdown 源码' })).toHaveCount(
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  const saveRequestPromise = page.waitForRequest(
+    (request) =>
+      request.method() === 'PUT' &&
+      request.url().endsWith('/api/studio/articles/article-1/draft') &&
+      Boolean(request.postData()?.includes('这是粗体')),
+  )
+  await page.keyboard.type('**这是粗体**')
+
+  const strong = body.locator('strong')
+  await expect(strong).toHaveText('这是粗体')
+  await expect
+    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .toEqual(['**', '**'])
+  const savedDraft = (await saveRequestPromise).postDataJSON() as {
+    markdown: string
+  }
+  expect(savedDraft.markdown).toContain('**这是粗体**')
+  expect(savedDraft.markdown).not.toContain('******')
+
+  const captureDir = process.env.MARKDOWN_MARKER_CAPTURE_DIR
+  if (captureDir) await mkdir(captureDir, { recursive: true })
+  for (const width of [1280, 768, 375]) {
+    await page.setViewportSize({ width, height: width === 375 ? 812 : 900 })
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((nextTheme) => {
+        document.documentElement.dataset.theme = nextTheme
+      }, theme)
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.documentElement.scrollWidth),
+        )
+        .toBeLessThanOrEqual(width)
+      if (captureDir) {
+        await page.screenshot({
+          path: path.join(captureDir, `${width}-${theme}.png`),
+          fullPage: true,
+        })
+      }
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = 'light'
+  })
+
+  await page.keyboard.type('后面是普通文本')
+  await expect(strong).toHaveText('这是粗体')
+  await expect(body).toContainText('后面是普通文本')
+  await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
+
+  await strong.click()
+  await expect
+    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .toEqual(['**', '**'])
+
+  await page.keyboard.press('End')
+  await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Markdown 源码' })).toHaveCount(
     0,
   )
-  await page.getByRole('button', { name: 'Markdown 源码' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Markdown 源码' })
-  const source = dialog.getByLabel('Markdown 源码')
-  await source.fill('**这是粗体**后面是普通文本')
-  await dialog.getByRole('button', { name: '应用源码' }).click()
+})
 
+test('contextual Markdown markers cover common inline marks', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
   const body = page.getByRole('textbox', { name: '章节正文' })
-  await expect(body.locator('strong')).toHaveText('这是粗体')
-  await expect(body).toContainText('后面是普通文本')
-  await expect(body.locator('strong')).toHaveCount(1)
-  await expect(body).not.toContainText('**')
-  await expect(page.getByRole('status').first()).toContainText('草稿已保存')
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('*斜体* ~~删除线~~ `行内代码` 普通文本')
 
-  await page.reload()
-  const reloadedBody = page.getByRole('textbox', { name: '章节正文' })
-  await expect(reloadedBody.locator('strong')).toHaveText('这是粗体')
-  await expect(reloadedBody).toContainText('后面是普通文本')
+  const markerText = () =>
+    body.locator('.markdown-context-marker').allTextContents()
+  await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
+
+  await body.locator('em').click()
+  await expect.poll(markerText).toEqual(['*', '*'])
+
+  await body.locator('s').click()
+  await expect.poll(markerText).toEqual(['~~', '~~'])
+
+  await body.locator('code').click()
+  await expect.poll(markerText).toEqual(['`', '`'])
+
+  await page.keyboard.press('End')
+  await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
+})
+
+test('contextual Markdown markers reveal link syntax', async ({ page }) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('链接文字')
+  await page.keyboard.press('Control+A')
+  await page.getByRole('button', { name: '链接' }).click()
+  const dialog = page.getByRole('dialog', { name: '添加链接' })
+  await dialog.getByLabel('链接地址').fill('https://example.com')
+  await dialog.getByRole('button', { name: '应用' }).click()
+
+  const link = body.getByRole('link', { name: '链接文字' })
+  await expect(link).toBeVisible()
+  await link.click()
+  await expect
+    .poll(() =>
+      body.locator('.markdown-context-marker').allTextContents(),
+    )
+    .toEqual(['[', '](https://example.com)'])
+})
+
+test('contextual Markdown markers reveal active heading and quote prefixes', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData(
+      'text/plain',
+      '## 上下文标题\n\n> 上下文引用\n\n普通文本',
+    )
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+
+  const markerText = () =>
+    body.locator('.markdown-context-marker').allTextContents()
+  await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
+
+  await body.getByRole('heading', { name: '上下文标题' }).click()
+  await expect.poll(markerText).toEqual(['## '])
+
+  await body.getByText('上下文引用', { exact: true }).click()
+  await expect.poll(markerText).toEqual(['> '])
+
+  await body.getByText('普通文本', { exact: true }).click()
+  await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
 })

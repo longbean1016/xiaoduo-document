@@ -21,7 +21,6 @@ import {
   CheckSquare2,
   ChevronRight,
   Code2,
-  CodeXml,
   Columns2,
   Eye,
   EyeOff,
@@ -176,8 +175,6 @@ export function ChapterEditor({
   const [versionPending, setVersionPending] = useState(false)
   const [linkOpen, setLinkOpen] = useState(false)
   const [linkValue, setLinkValue] = useState('')
-  const [sourceOpen, setSourceOpen] = useState(false)
-  const [sourceValue, setSourceValue] = useState('')
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [trashOpen, setTrashOpen] = useState(false)
   const [draftTick, setDraftTick] = useState(0)
@@ -734,23 +731,6 @@ export function ChapterEditor({
     setLinkOpen(true)
   }
 
-  function openSourceDialog() {
-    if (!editor) return
-    setSourceValue(editor.getMarkdown())
-    setSourceOpen(true)
-  }
-
-  function applyMarkdownSource(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!editor) return
-    editor.commands.setContent(sourceValue, {
-      contentType: 'markdown',
-      emitUpdate: true,
-    })
-    setSourceOpen(false)
-    markDirty()
-  }
-
   function scrollToHeading(headingId: string, index: number) {
     const heading = editorRef.current?.view.dom.querySelectorAll<HTMLElement>(
       'h1, h2, h3, h4, h5',
@@ -1018,7 +998,6 @@ export function ChapterEditor({
                 editor={editor}
                 onLink={openLinkDialog}
                 onImage={() => imageInputRef.current?.click()}
-                onSource={openSourceDialog}
                 imageBusy={imageBusy}
               />
 
@@ -1232,38 +1211,6 @@ export function ChapterEditor({
         className="hidden"
         onChange={(event) => void importMarkdown(event)}
       />
-
-      <Dialog
-        open={sourceOpen}
-        onOpenChange={setSourceOpen}
-        title="Markdown 源码"
-        description="直接编辑 canonical Markdown；应用后继续以富文本显示。"
-      >
-        <form className="markdown-source-dialog" onSubmit={applyMarkdownSource}>
-          <label>
-            <span>Markdown 源码</span>
-            <textarea
-              autoFocus
-              value={sourceValue}
-              onChange={(event) => setSourceValue(event.target.value)}
-              aria-label="Markdown 源码"
-              spellCheck={false}
-            />
-          </label>
-          <div>
-            <button
-              type="button"
-              className="studio-secondary-button"
-              onClick={() => setSourceOpen(false)}
-            >
-              取消
-            </button>
-            <button type="submit" className="studio-primary-button">
-              应用源码
-            </button>
-          </div>
-        </form>
-      </Dialog>
 
       <Dialog
         open={linkOpen}
@@ -1690,13 +1637,11 @@ function StudioToolbar({
   editor,
   onLink,
   onImage,
-  onSource,
   imageBusy,
 }: {
   editor: Editor | null
   onLink: () => void
   onImage: () => void
-  onSource: () => void
   imageBusy: boolean
 }) {
   const selectionState = useEditorState({
@@ -1854,9 +1799,6 @@ function StudioToolbar({
           }
         >
           <Table2 size={19} />
-        </ToolbarButton>
-        <ToolbarButton label="Markdown 源码" onClick={onSource}>
-          <CodeXml size={19} />
         </ToolbarButton>
       </div>
       <div className="toolbar-separator" />

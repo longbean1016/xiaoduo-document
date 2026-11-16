@@ -22,6 +22,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import { lowlight } from '../../lib/codeHighlight'
 import { CodeBlockView } from './CodeBlockView'
+import { ContextualMarkdownMarkers } from './ContextualMarkdownMarkers'
 import { SlashCommand } from './SlashMenu'
 
 export const ZhijianImage = Image.extend({
@@ -126,7 +127,7 @@ export function createEditorExtensions(options?: {
     Color,
     Underline,
     ZhijianHighlight.configure({ multicolor: true }),
-    ...(editable ? [SlashCommand] : []),
+    ...(editable ? [ContextualMarkdownMarkers, SlashCommand] : []),
   ]
 }
 

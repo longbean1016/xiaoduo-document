@@ -2769,46 +2769,6 @@ select:focus {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
-.markdown-source-dialog {
-  display: grid;
-  gap: 16px;
-  padding: 20px;
-}
-
-.markdown-source-dialog label {
-  display: grid;
-  gap: 8px;
-  color: var(--ink-soft);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.markdown-source-dialog textarea {
-  width: 100%;
-  min-height: min(48vh, 420px);
-  max-height: 52vh;
-  resize: vertical;
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  outline: none;
-  background: var(--field);
-  padding: 14px 16px;
-  color: var(--ink);
-  font: 13px/1.7 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
-  tab-size: 2;
-}
-
-.markdown-source-dialog textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
-}
-
-.markdown-source-dialog > div {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
 .zhijian-prose .editor-code-block pre {
   margin: 0;
   border: 0;
@@ -3926,6 +3886,35 @@ select:focus {
 .toolbar-button:disabled {
   opacity: 0.3;
   pointer-events: none;
+}
+
+.markdown-context-marker {
+  display: inline;
+  background: transparent;
+  color: var(--muted-faint);
+  font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 0.76em;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  opacity: 0.72;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  user-select: none;
+  white-space: normal;
+}
+
+.markdown-context-marker[data-markdown-marker="code"] {
+  color: var(--code-muted);
+}
+
+.markdown-context-marker[data-side="open"] {
+  margin-right: 0.08em;
+}
+
+.markdown-context-marker[data-side="close"] {
+  margin-left: 0.08em;
 }
 
 .bubble-menu {
