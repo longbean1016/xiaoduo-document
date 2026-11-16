@@ -130,3 +130,33 @@ test('literal bold inserted without keyboard rules is normalized', async ({
   await expect(body.locator('strong')).toHaveText('混合粗体')
   await expect(body).not.toContainText('**')
 })
+
+test('Markdown source dialog can edit after a bold range', async ({ page }) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  await expect(page.getByRole('dialog', { name: 'Markdown 源码' })).toHaveCount(
+    0,
+  )
+  await page.getByRole('button', { name: 'Markdown 源码' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Markdown 源码' })
+  const source = dialog.getByLabel('Markdown 源码')
+  await source.fill('**这是粗体**后面是普通文本')
+  await dialog.getByRole('button', { name: '应用源码' }).click()
+
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await expect(body.locator('strong')).toHaveText('这是粗体')
+  await expect(body).toContainText('后面是普通文本')
+  await expect(body.locator('strong')).toHaveCount(1)
+  await expect(body).not.toContainText('**')
+  await expect(page.getByRole('status').first()).toContainText('草稿已保存')
+
+  await page.reload()
+  const reloadedBody = page.getByRole('textbox', { name: '章节正文' })
+  await expect(reloadedBody.locator('strong')).toHaveText('这是粗体')
+  await expect(reloadedBody).toContainText('后面是普通文本')
+})

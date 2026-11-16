@@ -63,28 +63,27 @@ test('editor highlights fenced code and allows changing its language', async ({
   ).toBe('rgb(23, 32, 27)')
   await code.click()
 
-  const languageButton = codeBlock.getByRole('button', {
-    name: '代码语言',
-  })
-  await expect(languageButton).toBeVisible()
+  const languageInput = codeBlock.getByLabel('代码语言')
+  await expect(languageInput).toBeVisible()
+  await expect(languageInput).toHaveValue('typescript')
   const saveRequestPromise = page.waitForRequest(
     (request) =>
       request.method() === 'PUT' &&
       request.url().endsWith('/api/studio/articles/article-1/draft') &&
-      Boolean(request.postData()?.includes('javascript')),
+      Boolean(request.postData()?.includes('java')),
   )
-  await languageButton.click()
-  await page.getByRole('menuitem', { name: 'JavaScript' }).click()
-  await expect(code).toHaveClass(/language-javascript/)
+  await languageInput.fill('java')
+  await languageInput.press('Enter')
+  await expect(code).toHaveClass(/language-java/)
   const saveRequest = await saveRequestPromise
   const savedDraft = saveRequest.postDataJSON() as { markdown: string }
-  expect(savedDraft.markdown).toContain('```javascript')
+  expect(savedDraft.markdown).toContain('```java')
 
   await expect(page.getByRole('status').first()).toContainText('草稿已保存')
   await page.reload()
   await expect(
     page.getByRole('textbox', { name: '章节正文' }).locator('pre code'),
-  ).toHaveClass(/language-javascript/)
+  ).toHaveClass(/language-java/)
 
   for (const width of [1280, 768, 375]) {
     await page.setViewportSize({ width, height: width === 375 ? 812 : 900 })
@@ -111,7 +110,7 @@ test('editor highlights fenced code and allows changing its language', async ({
   }
 })
 
-test('code block header selects language and typed fences set language', async ({
+test('code block header accepts manual language and typed fences set language', async ({
   page,
 }) => {
   await page.goto('/studio/login')
@@ -130,10 +129,16 @@ test('code block header selects language and typed fences set language', async (
   await expect(code).toHaveClass(/language-python/)
 
   const block = body.locator('.editor-code-block')
-  const languageButton = block.getByRole('button', { name: '代码语言' })
-  await expect(languageButton).toBeVisible()
-  await languageButton.click()
-  await page.getByRole('menuitem', { name: 'TypeScript' }).click()
-  await expect(code).toHaveClass(/language-typescript/)
-  await expect(block.getByText('TypeScript', { exact: true })).toBeVisible()
+  const languageInput = block.getByLabel('代码语言')
+  await expect(languageInput).toHaveValue('python')
+  await languageInput.fill('java')
+  await languageInput.press('Enter')
+  await expect(code).toHaveClass(/language-java/)
+
+  await body.fill('')
+  await body.click()
+  await page.getByRole('button', { name: '代码块' }).click()
+  await expect(
+    body.locator('.editor-code-block').getByLabel('代码语言'),
+  ).toHaveValue('text')
 })

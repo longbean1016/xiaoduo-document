@@ -2724,6 +2724,75 @@ select:focus {
   color: var(--code-ink);
 }
 
+.editor-code-language-field {
+  display: inline-flex;
+  align-items: center;
+}
+
+.editor-code-language-field input {
+  width: 112px;
+  height: 26px;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  background: transparent;
+  padding: 0 7px;
+  color: var(--code-muted);
+  font: 11px/1.4 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.editor-code-language-field input:hover {
+  border-color: var(--code-border) !important;
+  background: color-mix(in srgb, var(--code-ink) 4%, transparent);
+}
+
+.editor-code-language-field input:focus {
+  border-color: var(--accent) !important;
+  background: var(--code-surface);
+  color: var(--code-ink);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.markdown-source-dialog {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.markdown-source-dialog label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.markdown-source-dialog textarea {
+  width: 100%;
+  min-height: min(48vh, 420px);
+  max-height: 52vh;
+  resize: vertical;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  outline: none;
+  background: var(--field);
+  padding: 14px 16px;
+  color: var(--ink);
+  font: 13px/1.7 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  tab-size: 2;
+}
+
+.markdown-source-dialog textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.markdown-source-dialog > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .zhijian-prose .editor-code-block pre {
   margin: 0;
   border: 0;

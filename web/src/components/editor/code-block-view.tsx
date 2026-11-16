@@ -5,14 +5,9 @@ import {
   NodeViewWrapper,
   type NodeViewProps,
 } from '@tiptap/react'
-import { Check, ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { MermaidDiagram } from '@/components/mermaid-diagram'
-import {
-  codeLanguageLabel,
-  codeLanguageOptions,
-} from '@/lib/code-highlight'
 import { cn } from '@/lib/utils'
 
 export function CodeBlockView({
@@ -23,8 +18,14 @@ export function CodeBlockView({
   const language =
     typeof node.attrs.language === 'string' && node.attrs.language
       ? node.attrs.language
-      : 'plaintext'
+      : 'text'
   const isMermaid = language === 'mermaid'
+  const [languageEdit, setLanguageEdit] = useState({
+    nodeLanguage: language,
+    value: language,
+  })
+  const languageValue =
+    languageEdit.nodeLanguage === language ? languageEdit.value : language
   const [sourceMode, setSourceMode] = useState({
     language,
     showSource: !isMermaid,
@@ -44,47 +45,38 @@ export function CodeBlockView({
       data-language={language}
     >
       <div className="editor-code-block-header" contentEditable={false}>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button
-              type="button"
-              className="editor-code-language-trigger"
-              aria-label="代码语言"
-            >
-              <span>{codeLanguageLabel(language)}</span>
-              <ChevronDown size={15} />
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              className="block-type-menu"
-              side="bottom"
-              align="start"
-              sideOffset={6}
-            >
-              <DropdownMenu.Label className="block-type-menu-label">
-                代码语言
-              </DropdownMenu.Label>
-              {codeLanguageOptions.map((option) => (
-                <DropdownMenu.Item
-                  key={option.value}
-                  className={cn(
-                    'block-type-menu-item',
-                    language === option.value && 'is-active',
-                  )}
-                  onSelect={() =>
-                    updateAttributes({ language: option.value })
-                  }
-                >
-                  <span>{option.label}</span>
-                  {language === option.value ? (
-                    <Check size={17} className="ml-auto" />
-                  ) : null}
-                </DropdownMenu.Item>
-              ))}
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
+        <label className="editor-code-language-field">
+          <span className="sr-only">代码语言</span>
+          <input
+            value={languageValue}
+            aria-label="代码语言"
+            spellCheck={false}
+            onChange={(event) =>
+              setLanguageEdit({
+                nodeLanguage: language,
+                value: event.target.value,
+              })
+            }
+            onBlur={() => {
+              const next = languageValue.trim().toLowerCase() || 'text'
+              setLanguageEdit({ nodeLanguage: next, value: next })
+              updateAttributes({ language: next })
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                event.currentTarget.blur()
+              }
+              if (event.key === 'Escape') {
+                setLanguageEdit({
+                  nodeLanguage: language,
+                  value: language,
+                })
+                event.currentTarget.blur()
+              }
+            }}
+          />
+        </label>
         {isMermaid ? (
           <button
             type="button"

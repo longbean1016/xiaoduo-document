@@ -19,6 +19,7 @@ import {
   CheckSquare2,
   ChevronRight,
   Code2,
+  CodeXml,
   Columns2,
   Eye,
   EyeOff,
@@ -36,7 +37,6 @@ import {
   Link2,
   List,
   ListOrdered,
-  Languages,
   LoaderCircle,
   Palette,
   Pilcrow,
@@ -65,10 +65,6 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Hint } from '../../components/ui/Tooltip'
 import { compressImageFile } from '../../lib/images'
 import { markdownHeadings } from '../../lib/markdownHeadings'
-import {
-  codeLanguageLabel,
-  codeLanguageOptions,
-} from '../../lib/codeHighlight'
 import {
   buildMarkdownDiff,
   type MarkdownDiffChange,
@@ -141,6 +137,8 @@ export function StudioNotePage() {
   const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false)
   const [linkOpen, setLinkOpen] = useState(false)
   const [linkValue, setLinkValue] = useState('')
+  const [sourceOpen, setSourceOpen] = useState(false)
+  const [sourceValue, setSourceValue] = useState('')
   const [imageBusy, setImageBusy] = useState(false)
   const [, setDraftTick] = useState(0)
   const [activeDiffChangeId, setActiveDiffChangeId] = useState<string | null>(
@@ -600,6 +598,25 @@ export function StudioNotePage() {
     setLinkOpen(true)
   }
 
+  const openSourceDialog = () => {
+    if (!editor) return
+    setSourceValue(editor.getMarkdown())
+    setSourceOpen(true)
+  }
+
+  const applyMarkdownSource = (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+    if (!editor) return
+    editor.commands.setContent(sourceValue, {
+      contentType: 'markdown',
+      emitUpdate: true,
+    })
+    setSourceOpen(false)
+    markDirty()
+  }
+
   const scrollToEditorHeading = (headingId: string, index: number) => {
     const heading = editorRef.current?.view.dom.querySelectorAll<HTMLElement>(
       'h1, h2, h3, h4, h5',
@@ -992,6 +1009,7 @@ export function StudioNotePage() {
                 editor={editor}
                 onLink={openLinkDialog}
                 onImage={() => imageInputRef.current?.click()}
+                onSource={openSourceDialog}
                 imageBusy={imageBusy}
               />
 
@@ -1196,6 +1214,38 @@ export function StudioNotePage() {
         className="hidden"
         onChange={handleMarkdownImport}
       />
+
+      <Dialog
+        open={sourceOpen}
+        onOpenChange={setSourceOpen}
+        title="Markdown 源码"
+        description="直接编辑 canonical Markdown；应用后继续以富文本显示。"
+      >
+        <form className="markdown-source-dialog" onSubmit={applyMarkdownSource}>
+          <label>
+            <span>Markdown 源码</span>
+            <textarea
+              autoFocus
+              value={sourceValue}
+              onChange={(event) => setSourceValue(event.target.value)}
+              aria-label="Markdown 源码"
+              spellCheck={false}
+            />
+          </label>
+          <div>
+            <button
+              type="button"
+              className="studio-secondary-button"
+              onClick={() => setSourceOpen(false)}
+            >
+              取消
+            </button>
+            <button type="submit" className="studio-primary-button">
+              应用源码
+            </button>
+          </div>
+        </form>
+      </Dialog>
 
       <Dialog
         open={linkOpen}
@@ -1877,74 +1927,17 @@ function TextColorMenu({
   )
 }
 
-function CodeLanguageMenu({
-  editor,
-  language,
-}: {
-  editor: Editor | null
-  language: string
-}) {
-  if (!editor) return null
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          className="toolbar-button is-active"
-          aria-label="代码语言"
-          title={`代码语言：${codeLanguageLabel(language)}`}
-        >
-          <Languages size={19} />
-        </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="block-type-menu"
-          side="bottom"
-          align="start"
-          sideOffset={8}
-        >
-          <DropdownMenu.Label className="block-type-menu-label">
-            代码语言
-          </DropdownMenu.Label>
-          {codeLanguageOptions.map((option) => (
-            <DropdownMenu.Item
-              key={option.value}
-              className={cn(
-                'block-type-menu-item',
-                language === option.value && 'is-active',
-              )}
-              onSelect={() =>
-                editor
-                  .chain()
-                  .focus()
-                  .updateAttributes('codeBlock', {
-                    language: option.value,
-                  })
-                  .run()
-              }
-            >
-              <span>{option.label}</span>
-              {language === option.value ? (
-                <Check size={18} className="ml-auto" />
-              ) : null}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
-  )
-}
-
 function StudioToolbar({
   editor,
   onLink,
   onImage,
+  onSource,
   imageBusy,
 }: {
   editor: Editor | null
   onLink: () => void
   onImage: () => void
+  onSource: () => void
   imageBusy: boolean
 }) {
   const selectionState = useEditorState({
@@ -1971,10 +1964,6 @@ function StudioToolbar({
         taskList: currentEditor.isActive('taskList'),
         blockquote: currentEditor.isActive('blockquote'),
         codeBlock: currentEditor.isActive('codeBlock'),
-        codeLanguage:
-          (currentEditor.getAttributes('codeBlock').language as
-            | string
-            | undefined) ?? 'plaintext',
         link: currentEditor.isActive('link'),
         canUndo: currentEditor.can().undo(),
         canRedo: currentEditor.can().redo(),
@@ -2107,12 +2096,9 @@ function StudioToolbar({
         >
           <Table2 size={19} />
         </ToolbarButton>
-        {selectionState.codeBlock ? (
-          <CodeLanguageMenu
-            editor={editor}
-            language={selectionState.codeLanguage}
-          />
-        ) : null}
+        <ToolbarButton label="Markdown 源码" onClick={onSource}>
+          <CodeXml size={19} />
+        </ToolbarButton>
       </div>
       <div className="toolbar-separator" />
       <div className="toolbar-group">
