@@ -3900,6 +3900,7 @@ select:focus {
   line-height: 1;
   opacity: 0.72;
   overflow-wrap: anywhere;
+  pointer-events: none;
   text-decoration: none;
   user-select: none;
   white-space: normal;

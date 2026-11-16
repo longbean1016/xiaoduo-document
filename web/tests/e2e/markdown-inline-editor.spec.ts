@@ -309,3 +309,95 @@ test('contextual Markdown markers reveal active heading and quote prefixes', asy
   await body.getByText('普通文本', { exact: true }).click()
   await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
 })
+
+test('contextual heading and quote markers can be deleted', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData('text/plain', '## 标题\n\n> 引用\n\n普通文本')
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+
+  await body.getByRole('heading', { name: '标题' }).click()
+  await page.keyboard.press('Home')
+  await expect
+    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .toEqual(['## '])
+  await page.keyboard.press('Backspace')
+  await expect(body.getByRole('heading', { name: '标题' })).toHaveCount(0)
+  await expect(body.getByText('标题', { exact: true })).toBeVisible()
+
+  await body.getByText('引用', { exact: true }).click()
+  await page.keyboard.press('Home')
+  await expect
+    .poll(() => body.locator('.markdown-context-marker').allTextContents())
+    .toEqual(['> '])
+  await page.keyboard.press('Backspace')
+  await expect(body.locator('blockquote')).toHaveCount(0)
+  await expect(body.getByText('引用', { exact: true })).toBeVisible()
+})
+
+test('inline marker deletion keeps content and exits bold formatting', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('**粗体内容**后面普通文本')
+  const strong = body.locator('strong')
+  const markers = body.locator('.markdown-context-marker')
+
+  const strongBox = await strong.boundingBox()
+  if (!strongBox) throw new Error('找不到粗体文本位置')
+  await page.mouse.click(
+    strongBox.x + strongBox.width - 1,
+    strongBox.y + strongBox.height / 2,
+  )
+  await expect(markers).toHaveCount(2)
+  await page.keyboard.press('Delete')
+  await expect(body.locator('strong')).toHaveCount(0)
+  await expect(body).toContainText('粗体内容后面普通文本')
+
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('**可退格粗体**后面普通文本')
+  const secondStrong = body.locator('strong')
+  await secondStrong.click()
+  await page.keyboard.press('Home')
+  await expect(markers).toHaveCount(2)
+  await page.keyboard.press('Backspace')
+  await expect(body.locator('strong')).toHaveCount(0)
+  await expect(body).toContainText('可退格粗体后面普通文本')
+
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('**粗体后继续**')
+  await page.keyboard.press('End')
+  await page.keyboard.type('普通文本')
+  await expect(body.locator('strong')).toHaveText('粗体后继续')
+  await expect(body).toContainText('普通文本')
+})
