@@ -30,7 +30,7 @@ export interface ApplicationRecord {
 
 export interface InviteRecord {
   id: string
-  email: string
+  email: string | null
   displayName: string | null
   articleIds: string[]
   source: 'application' | 'direct'
@@ -60,7 +60,7 @@ export interface RevokedInvitation {
 }
 
 export interface InvitationActivationPreview {
-  email: string
+  email: string | null
   displayName: string | null
   articleTitles: string[]
   status: 'pending' | 'activated' | 'expired' | 'revoked'
@@ -102,7 +102,7 @@ async function notifyInvitation(
     eventKey: `invitation:${status}:${invite.id}`,
     kind: 'invitation',
     title: labels[status],
-    body: `${invite.email} 的协作邀请状态变为 ${status}`,
+    body: `${invite.email ?? '未绑定邮箱'} 的协作邀请状态变为 ${status}`,
     href: '/studio/collaboration',
   })
 }
@@ -191,13 +191,14 @@ export async function listApplications(): Promise<ApplicationRecord[]> {
 }
 
 async function createInvite(input: {
-  email: string
+  email: string | null
   displayName?: string | null
   articleIds: string[]
   source: 'application' | 'direct'
   applicationId?: string | null
 }): Promise<InviteRecord> {
   const articleIds = [...new Set(input.articleIds)]
+  const email = input.email ? normalizeEmail(input.email) : null
   if (!articleIds.length) throw new Error('NO_ARTICLES')
   const valid = await db
     .select({ id: article.id })
@@ -212,8 +213,10 @@ async function createInvite(input: {
     await transaction.insert(collaborationInvite).values({
       id,
       tokenHash: hashToken(token),
-      email: normalizeEmail(input.email),
+      email,
       displayName: input.displayName?.trim() || null,
+      claimedUserId: null,
+      claimedAt: null,
       source: input.source,
       applicationId: input.applicationId ?? null,
       status: 'pending',
@@ -230,8 +233,10 @@ async function createInvite(input: {
     {
       id,
       tokenHash: hashToken(token),
-      email: normalizeEmail(input.email),
+      email,
       displayName: input.displayName?.trim() || null,
+      claimedUserId: null,
+      claimedAt: null,
       source: input.source,
       applicationId: input.applicationId ?? null,
       status: 'pending',
@@ -242,7 +247,7 @@ async function createInvite(input: {
   )
   return {
     id,
-    email: normalizeEmail(input.email),
+    email,
     displayName: input.displayName?.trim() || null,
     articleIds,
     source: input.source,
@@ -424,6 +429,7 @@ export async function activateInvitation(input: {
       return { status: 'expired' }
     }
 
+    if (!invite.email) throw new Error('INVITE_NOT_BOUND')
     const email = normalizeEmail(invite.email)
     const displayName = input.displayName.trim()
     const passwordHash = await hashPassword(input.password)

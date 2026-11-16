@@ -37,7 +37,7 @@ interface Application {
 
 interface Invite {
   id: string
-  email: string
+  email: string | null
   displayName: string | null
   articleIds: string[]
   source: 'application' | 'direct'
