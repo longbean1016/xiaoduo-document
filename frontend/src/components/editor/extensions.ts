@@ -18,6 +18,11 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import Underline from '@tiptap/extension-underline'
 import { Markdown } from '@tiptap/markdown'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import { lowlight } from '../../lib/codeHighlight'
+import { CodeBlockView } from './CodeBlockView'
+import { ContextualMarkdownMarkers } from './ContextualMarkdownMarkers'
 import { SlashCommand } from './SlashMenu'
 
 export const ZhijianImage = Image.extend({
@@ -67,6 +72,17 @@ const ZhijianHighlight = Highlight.extend({
   },
 })
 
+const ZhijianCodeBlock = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlockView)
+  },
+}).configure({
+  lowlight,
+  defaultLanguage: 'text',
+  enableTabIndentation: true,
+  tabSize: 2,
+})
+
 export function createEditorExtensions(options?: {
   editable?: boolean
 }): AnyExtension[] {
@@ -77,7 +93,9 @@ export function createEditorExtensions(options?: {
       heading: { levels: [1, 2, 3, 4, 5] },
       link: false,
       underline: false,
+      codeBlock: false,
     }),
+    ZhijianCodeBlock,
     ...(editable
       ? [
           Placeholder.configure({
@@ -109,7 +127,7 @@ export function createEditorExtensions(options?: {
     Color,
     Underline,
     ZhijianHighlight.configure({ multicolor: true }),
-    ...(editable ? [SlashCommand] : []),
+    ...(editable ? [ContextualMarkdownMarkers, SlashCommand] : []),
   ]
 }
 

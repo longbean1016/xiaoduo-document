@@ -45,6 +45,7 @@ import {
   Save,
   Send,
   Strikethrough,
+  Table2,
   Trash2,
   Underline,
   Undo2,
@@ -67,6 +68,7 @@ import {
   buildMarkdownDiff,
   type MarkdownDiffChange,
 } from '../../lib/markdownDiff'
+import { normalizeCurrentMarkdownBlock } from '../../lib/markdownNormalize'
 import {
   extractPlainText,
   formatClock,
@@ -154,6 +156,7 @@ export function StudioNotePage() {
   const editorWorkspaceRef = useRef<HTMLDivElement | null>(null)
   const tocSelectionLockRef = useRef(false)
   const tocSelectionTimerRef = useRef<number | null>(null)
+  const normalizeTimerRef = useRef<number | null>(null)
 
   const markDirty = useCallback(() => {
     dirtyRef.current = true
@@ -179,9 +182,18 @@ export function StudioNotePage() {
           if (!clipboard) return false
           const text = clipboard.getData('text/plain')
           const html = clipboard.getData('text/html')
-          if (!text || html) return false
+          if (!text) return false
+          const htmlText = html
+            ? new DOMParser()
+                .parseFromString(html, 'text/html')
+                .body.textContent?.trim()
+            : ''
+          if (htmlText && htmlText !== text.trim()) return false
           const looksLikeMarkdown =
-            /(^|\n)(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|\[[^\]]+\]\([^)]+\))/.test(
+            /(^|\n)\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|~~~|---|\|.+\|)/.test(
+              text,
+            ) ||
+            /(\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_|~~[^~\n]+~~|`[^`\n]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/.test(
               text,
             )
           const currentEditor = editorRef.current
@@ -199,6 +211,12 @@ export function StudioNotePage() {
         if (applyingVersionRef.current) return
         setDraftTick((current) => current + 1)
         markDirty()
+        if (normalizeTimerRef.current) {
+          window.clearTimeout(normalizeTimerRef.current)
+        }
+        normalizeTimerRef.current = window.setTimeout(() => {
+          normalizeCurrentMarkdownBlock(editor)
+        }, 80)
       },
     },
     [canEditNote, noteId],
@@ -294,6 +312,9 @@ export function StudioNotePage() {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
       if (tocSelectionTimerRef.current) {
         window.clearTimeout(tocSelectionTimerRef.current)
+      }
+      if (normalizeTimerRef.current) {
+        window.clearTimeout(normalizeTimerRef.current)
       }
     }
   }, [noteId])
@@ -2006,6 +2027,18 @@ function StudioToolbar({
         >
           <Code2 size={19} />
         </ToolbarButton>
+        <ToolbarButton
+          label="插入表格"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+        >
+          <Table2 size={19} />
+        </ToolbarButton>
       </div>
       <div className="toolbar-separator" />
       <div className="toolbar-group">
@@ -2020,7 +2053,10 @@ function StudioToolbar({
           )}
         </ToolbarButton>
       </div>
-      <div className="ml-auto flex items-center gap-0.5">
+      <div
+        className="ml-auto flex items-center gap-0.5"
+        data-visual-dynamic
+      >
         <ToolbarButton
           label="撤销"
           onClick={() => editor.chain().focus().undo().run()}

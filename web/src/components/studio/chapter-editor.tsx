@@ -46,6 +46,7 @@ import {
   Save,
   Send,
   Strikethrough,
+  Table2,
   Trash2,
   Underline,
   Undo2,
@@ -61,6 +62,7 @@ import { VersionHistory, type VersionItem } from './version-history'
 import { MarkdownDiffView } from './markdown-diff-view'
 import { compressImageForUpload } from '@/lib/image-compression'
 import { countWords, markdownHeadings } from '@/lib/markdown-headings'
+import { normalizeCurrentMarkdownBlock } from '@/lib/markdown-normalize'
 import type { MarkdownDiffChange } from '@/lib/markdown-diff'
 import { cn } from '@/lib/utils'
 
@@ -185,6 +187,9 @@ export function ChapterEditor({
   const savingRef = useRef(false)
   const conflictRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const normalizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
   const saveNowRef = useRef<(force?: boolean) => Promise<boolean>>(
     async () => false,
   )
@@ -212,9 +217,18 @@ export function ChapterEditor({
           if (!clipboard) return false
           const text = clipboard.getData('text/plain')
           const html = clipboard.getData('text/html')
-          if (!text || html) return false
+          if (!text) return false
+          const htmlText = html
+            ? new DOMParser()
+                .parseFromString(html, 'text/html')
+                .body.textContent?.trim()
+            : ''
+          if (htmlText && htmlText !== text.trim()) return false
           const looksLikeMarkdown =
-            /(^|\n)(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|\[[^\]]+\]\([^)]+\))/.test(
+            /(^|\n)\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|~~~|---|\|.+\|)/.test(
+              text,
+            ) ||
+            /(\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_|~~[^~\n]+~~|`[^`\n]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/.test(
               text,
             )
           const currentEditor = editorRef.current
@@ -249,10 +263,19 @@ export function ChapterEditor({
     const onUpdate = () => {
       setDraftTick((current) => current + 1)
       markDirty()
+      if (normalizeTimerRef.current) {
+        clearTimeout(normalizeTimerRef.current)
+      }
+      normalizeTimerRef.current = setTimeout(() => {
+        normalizeCurrentMarkdownBlock(editor)
+      }, 80)
     }
     editor.on('update', onUpdate)
     return () => {
       editor.off('update', onUpdate)
+      if (normalizeTimerRef.current) {
+        clearTimeout(normalizeTimerRef.current)
+      }
       editorRef.current = null
     }
   }, [editor, markDirty])
@@ -1765,6 +1788,18 @@ function StudioToolbar({
         >
           <Code2 size={19} />
         </ToolbarButton>
+        <ToolbarButton
+          label="插入表格"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+        >
+          <Table2 size={19} />
+        </ToolbarButton>
       </div>
       <div className="toolbar-separator" />
       <div className="toolbar-group">
@@ -1783,7 +1818,10 @@ function StudioToolbar({
           )}
         </ToolbarButton>
       </div>
-      <div className="ml-auto flex items-center gap-0.5">
+      <div
+        className="ml-auto flex items-center gap-0.5"
+        data-visual-dynamic
+      >
         <ToolbarButton
           label="撤销"
           onClick={() => editor.chain().focus().undo().run()}
