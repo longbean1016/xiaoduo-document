@@ -93,3 +93,59 @@ test('invalid Mermaid stays recoverable on a dark 375px editor', async ({
     )
     .toBeLessThanOrEqual(375)
 })
+
+test('Mermaid stays inside the editor across responsive themes', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData(
+      'text/plain',
+      '```mermaid\ngraph TD\n  A[想法] --> B[笔记]\n```\n',
+    )
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+
+  for (const width of [1280, 768, 375]) {
+    await page.setViewportSize({ width, height: width === 375 ? 812 : 900 })
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((nextTheme) => {
+        window.localStorage.setItem('zhijian-theme', nextTheme)
+        document.documentElement.dataset.theme = nextTheme
+        document.documentElement.style.colorScheme = nextTheme
+        window.dispatchEvent(new Event('zhijian-theme-change'))
+      }, theme)
+      const diagram = page.locator('.mermaid-diagram svg')
+      await expect(diagram).toBeVisible()
+      await expect(
+        page.locator('.mermaid-diagram svg script'),
+      ).toHaveCount(0)
+      await expect(
+        page.locator('.mermaid-diagram svg a[href^="javascript:"]'),
+      ).toHaveCount(0)
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth,
+          ),
+        )
+        .toBeLessThanOrEqual(width)
+    }
+  }
+})
