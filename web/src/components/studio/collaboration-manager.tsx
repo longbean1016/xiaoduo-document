@@ -92,8 +92,6 @@ export function CollaborationManager({
 }) {
   const router = useRouter()
   const [section, setSection] = useState<Section>('applications')
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteName, setInviteName] = useState('')
   const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([])
   const [generatedInviteLink, setGeneratedInviteLink] = useState('')
   const [resetLink, setResetLink] = useState('')
@@ -154,8 +152,6 @@ export function CollaborationManager({
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        email: inviteEmail,
-        displayName: inviteName,
         articleIds: selectedArticleIds,
       }),
     })
@@ -167,8 +163,6 @@ export function CollaborationManager({
     }
     setMessage(response.ok ? '邀请已生成' : '邀请生成失败')
     if (response.ok) {
-      setInviteEmail('')
-      setInviteName('')
       setSelectedArticleIds([])
     }
     router.refresh()
@@ -460,30 +454,10 @@ export function CollaborationManager({
             <div className="collaboration-section-heading">
               <div>
                 <h2>主动邀请</h2>
-                <p>填写邮箱并勾选文章，生成链接后由你手动发送。</p>
+                <p>只选择文章授权，生成一次性链接后由你主动发送。</p>
               </div>
             </div>
             <form className="collaboration-invite-form" onSubmit={createInvite}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label>
-                  <span>邮箱</span>
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(event) => setInviteEmail(event.target.value)}
-                    placeholder="name@example.com"
-                    required
-                  />
-                </label>
-                <label>
-                  <span>昵称预设</span>
-                  <input
-                    value={inviteName}
-                    onChange={(event) => setInviteName(event.target.value)}
-                    placeholder="可留空，由对方填写"
-                  />
-                </label>
-              </div>
               <ArticlePicker
                 articles={articles}
                 selected={selectedArticleIds}
@@ -508,7 +482,7 @@ export function CollaborationManager({
                 <article key={invite.id} className="collaboration-invite-row">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <strong>{invite.email}</strong>
+                      <strong>{invite.email ?? '未绑定邮箱'}</strong>
                       <span className="studio-status">
                         {invite.status === 'pending'
                           ? '待激活'

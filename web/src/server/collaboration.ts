@@ -259,11 +259,17 @@ async function createInvite(input: {
 }
 
 export async function createDirectInvite(input: {
-  email: string
-  displayName?: string
   articleIds: string[]
+  /** Legacy migration compatibility; new links intentionally start unbound. */
+  email?: string
+  displayName?: string
 }) {
-  return createInvite({ ...input, source: 'direct' })
+  return createInvite({
+    articleIds: input.articleIds,
+    displayName: input.displayName,
+    email: input.email ?? null,
+    source: 'direct',
+  })
 }
 
 export async function revokePendingInvite(id: string) {

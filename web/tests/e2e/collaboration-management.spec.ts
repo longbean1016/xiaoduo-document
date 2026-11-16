@@ -226,8 +226,6 @@ test('owner confirms before revoking a pending invitation', async ({
     {
       headers: { origin: appOrigin },
       data: {
-        email: 'revoke-invite@example.com',
-        displayName: '待撤销邀请',
         articleIds: ['article-1'],
       },
     },
@@ -238,7 +236,8 @@ test('owner confirms before revoking a pending invitation', async ({
   await page.getByRole('tab', { name: '邀请记录' }).click()
   const inviteRow = page
     .locator('.collaboration-invite-row')
-    .filter({ hasText: 'revoke-invite@example.com' })
+    .filter({ hasText: '未绑定邮箱' })
+    .last()
   const revokeButton = inviteRow.getByRole('button', {
     name: '撤销邀请',
   })

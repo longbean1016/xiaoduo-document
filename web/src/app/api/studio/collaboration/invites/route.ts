@@ -4,8 +4,6 @@ import { authorizeOwnerMutation } from '@/lib/studio-request'
 import { createDirectInvite } from '@/server/collaboration'
 
 const schema = z.object({
-  email: z.string().trim().email().max(255),
-  displayName: z.string().trim().max(120).optional(),
   articleIds: z.array(z.string().min(1)).min(1),
 })
 

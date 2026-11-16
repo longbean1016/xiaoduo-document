@@ -57,10 +57,9 @@ describe('collaboration applications and invites', () => {
 
   it('creates a direct multi-article invite', async () => {
     const invite = await createDirectInvite({
-      email: 'writer@example.com',
-      displayName: '写作者',
       articleIds: ['article-1', 'article-2'],
     })
+    expect(invite.email).toBeNull()
     expect(invite.articleIds).toEqual(['article-1', 'article-2'])
     expect(invite.token).toHaveLength(64)
     expect(invite.status).toBe('pending')
