@@ -3,6 +3,12 @@ import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import rehypeSlug from 'rehype-slug'
+import {
+  Children,
+  isValidElement,
+  type ReactNode,
+} from 'react'
+import { MarkdownCodeBlock } from './MarkdownCodeBlock'
 
 const markdownSanitizeSchema = {
   ...defaultSchema,
@@ -20,6 +26,20 @@ const markdownSanitizeSchema = {
   },
 }
 
+function childText(children: ReactNode): string {
+  return Children.toArray(children)
+    .map((child) => {
+      if (typeof child === 'string' || typeof child === 'number') {
+        return String(child)
+      }
+      if (isValidElement<{ children?: ReactNode }>(child)) {
+        return childText(child.props.children)
+      }
+      return ''
+    })
+    .join('')
+}
+
 export function MarkdownArticle({ markdown }: { markdown: string }) {
   return (
     <div className="markdown-body">
@@ -31,6 +51,23 @@ export function MarkdownArticle({ markdown }: { markdown: string }) {
           rehypeSlug,
         ]}
         components={{
+          pre: ({ children }) => {
+            const child = Children.toArray(children)[0]
+            if (!isValidElement<{ className?: string; children?: ReactNode }>(child)) {
+              return <pre>{children}</pre>
+            }
+            const language =
+              child.props.className?.match(/language-([^\s]+)/)?.[1] ?? 'text'
+            return (
+              <MarkdownCodeBlock
+                language={language}
+                code={childText(child.props.children).replace(/\n$/, '')}
+              />
+            )
+          },
+          code: ({ children, className }) => (
+            <code className={className}>{children}</code>
+          ),
           a: ({ href, children, ...props }) => {
             const external = href?.startsWith('http')
             return (

@@ -37,11 +37,14 @@
   --code-border: #c8ddd1;
   --code-ink: #1d352b;
   --code-muted: #5e7569;
-  --code-keyword: #0f766e;
-  --code-string: #8a5a00;
-  --code-number: #1f5f8b;
-  --code-variable: #9d3f2b;
-  --code-comment: #708076;
+  --code-keyword: #cf222e;
+  --code-string: #0a3069;
+  --code-title: #8250df;
+  --code-number: #0550ae;
+  --code-variable: #953800;
+  --code-comment: #6e7781;
+  --code-name: #116329;
+  --code-meta: #0550ae;
   --display:
     "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
 }
@@ -77,11 +80,14 @@
   --code-border: #34483c;
   --code-ink: #d8e5dc;
   --code-muted: #94a79b;
-  --code-keyword: #8bc7a8;
-  --code-string: #e1c48c;
-  --code-number: #9bbce0;
-  --code-variable: #d9998c;
-  --code-comment: #87978c;
+  --code-keyword: #ff7b72;
+  --code-string: #a5d6ff;
+  --code-title: #d2a8ff;
+  --code-number: #79c0ff;
+  --code-variable: #ffa657;
+  --code-comment: #8b949e;
+  --code-name: #7ee787;
+  --code-meta: #79c0ff;
 }
 
 * {
@@ -1090,22 +1096,32 @@ select:focus {
 }
 
 .zhijian-prose pre code .hljs-string,
-.zhijian-prose pre code .hljs-title,
-.zhijian-prose pre code .hljs-name,
-.zhijian-prose pre code .hljs-type,
-.zhijian-prose pre code .hljs-attribute,
-.zhijian-prose pre code .hljs-symbol,
-.zhijian-prose pre code .hljs-bullet,
 .zhijian-prose pre code .hljs-addition {
   color: var(--code-string);
 }
 
+.zhijian-prose pre code .hljs-title,
+.zhijian-prose pre code .hljs-function {
+  color: var(--code-title);
+}
+
+.zhijian-prose pre code .hljs-name,
+.zhijian-prose pre code .hljs-type,
+.zhijian-prose pre code .hljs-attribute,
+.zhijian-prose pre code .hljs-symbol,
+.zhijian-prose pre code .hljs-bullet {
+  color: var(--code-name);
+}
+
 .zhijian-prose pre code .hljs-number,
-.zhijian-prose pre code .hljs-meta,
 .zhijian-prose pre code .hljs-built_in,
 .zhijian-prose pre code .hljs-builtin-name,
 .zhijian-prose pre code .hljs-params {
   color: var(--code-number);
+}
+
+.zhijian-prose pre code .hljs-meta {
+  color: var(--code-meta);
 }
 
 .zhijian-prose pre code .hljs-variable,
@@ -5216,6 +5232,92 @@ select:focus {
   padding: 0;
   color: inherit;
   font-size: 0.85em;
+}
+
+.markdown-code-block {
+  margin: 1.6em 0;
+  overflow: hidden;
+  border: 1px solid var(--code-border);
+  border-radius: 6px;
+  background: var(--code-surface);
+  color: var(--code-ink);
+}
+
+.markdown-code-block-header {
+  min-height: 34px;
+  border-bottom: 1px solid var(--code-border);
+  background: var(--code-header);
+  padding: 8px 12px;
+  color: var(--code-muted);
+  font: 11px/1.45 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.markdown-body .markdown-code-block pre {
+  margin: 0;
+  border-radius: 0;
+  background: var(--code-surface);
+  padding: 14px 16px;
+  color: var(--code-ink);
+}
+
+.markdown-body .markdown-code-block pre code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  color: var(--code-ink);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre;
+}
+
+.markdown-code-block .hljs-comment,
+.markdown-code-block .hljs-quote {
+  color: var(--code-comment);
+}
+
+.markdown-code-block .hljs-keyword,
+.markdown-code-block .hljs-selector-tag,
+.markdown-code-block .hljs-literal,
+.markdown-code-block .hljs-section,
+.markdown-code-block .hljs-link {
+  color: var(--code-keyword);
+}
+
+.markdown-code-block .hljs-string,
+.markdown-code-block .hljs-addition {
+  color: var(--code-string);
+}
+
+.markdown-code-block .hljs-title,
+.markdown-code-block .hljs-function {
+  color: var(--code-title);
+}
+
+.markdown-code-block .hljs-name,
+.markdown-code-block .hljs-type,
+.markdown-code-block .hljs-attribute,
+.markdown-code-block .hljs-symbol,
+.markdown-code-block .hljs-bullet {
+  color: var(--code-name);
+}
+
+.markdown-code-block .hljs-number,
+.markdown-code-block .hljs-built_in,
+.markdown-code-block .hljs-builtin-name,
+.markdown-code-block .hljs-params {
+  color: var(--code-number);
+}
+
+.markdown-code-block .hljs-meta {
+  color: var(--code-meta);
+}
+
+.markdown-code-block .hljs-variable,
+.markdown-code-block .hljs-template-variable,
+.markdown-code-block .hljs-regexp,
+.markdown-code-block .hljs-deletion {
+  color: var(--code-variable);
 }
 
 .markdown-body table {
