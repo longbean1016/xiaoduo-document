@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, BookOpen, ChevronRight } from 'lucide-react'
 import { BrandMark } from '@/components/brand-mark'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ThemePicker } from '@/components/theme-picker'
 import type {
   PublicCategory,
   PublicSiteProfile,
@@ -29,7 +29,7 @@ export function PublicPreview({
           <BrandMark />
         </Link>
         <div className="flex items-center gap-2">
-          <ThemeToggle className="landing-icon-button" iconSize={21} />
+          <ThemePicker className="landing-icon-button" iconSize={21} />
           <Link href="/library" className="landing-header-link">
             进入笔记库
             <ArrowRight size={18} />

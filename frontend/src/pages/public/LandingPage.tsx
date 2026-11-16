@@ -2,11 +2,10 @@ import {
   ArrowRight,
   BookOpen,
   ChevronRight,
-  Moon,
-  Sun,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { BrandMark } from '../../components/BrandMark'
+import { ThemePicker } from '../../components/ThemePicker'
 import { usePageTitle } from '../../lib/usePageTitle'
 import { categoryNotes, publicNotes, useSiteStore } from '../../store/siteStore'
 
@@ -15,8 +14,6 @@ export function LandingPage() {
   const author = useSiteStore((state) => state.author)
   const categories = useSiteStore((state) => state.categories)
   const notes = useSiteStore((state) => state.notes)
-  const themeMode = useSiteStore((state) => state.themeMode)
-  const setThemeMode = useSiteStore((state) => state.setThemeMode)
   const published = publicNotes(notes)
   const orderedCategories = categories
     .slice()
@@ -35,16 +32,7 @@ export function LandingPage() {
           <BrandMark />
         </Link>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="landing-icon-button"
-            onClick={() =>
-              setThemeMode(themeMode === 'light' ? 'dark' : 'light')
-            }
-            aria-label={themeMode === 'light' ? '切换深色' : '切换浅色'}
-          >
-            {themeMode === 'light' ? <Moon size={21} /> : <Sun size={21} />}
-          </button>
+          <ThemePicker className="landing-icon-button" iconSize={21} />
           <Link to="/library" className="landing-header-link">
             进入笔记库
             <ArrowRight size={18} />

@@ -22,10 +22,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog } from '@/components/ui/dialog'
 import { StudioSelect } from '@/components/ui/studio-select'
-import {
-  StudioSurfacePicker,
-  useStudioSurface,
-} from '@/components/studio/studio-surface-picker'
+import { ThemePicker } from '@/components/theme-picker'
 import { Toaster } from '@/components/ui/toaster'
 import { cn } from '@/lib/utils'
 import { signOutAction } from '@/app/actions/auth'
@@ -52,7 +49,6 @@ export function StudioShell({
   const pathname = usePathname()
   const router = useRouter()
   const isOwner = role === 'owner'
-  const studioSurface = useStudioSurface()
   const isEditor = pathname.startsWith('/studio/notes/')
   const orderedCategories = [...categories].sort(
     (left, right) => left.position - right.position,
@@ -114,7 +110,12 @@ export function StudioShell({
 
   return (
     <>
-      <div className="studio-shell" data-studio-surface={studioSurface}>
+      <div className="studio-shell">
+      {!isEditor ? (
+        <div className="studio-theme-picker-fixed">
+          <ThemePicker />
+        </div>
+      ) : null}
       {!isEditor ? (
         <div className="studio-mobile-bar">
           <BrandMark compact />
@@ -255,9 +256,6 @@ export function StudioShell({
             查看公开站
             <ArrowUpRight size={17} />
           </Link>
-          <div className="mt-3">
-            <StudioSurfacePicker />
-          </div>
           <div className="mt-4 flex items-center gap-2.5 px-2">
             <AuthorAvatar
               name={currentName}

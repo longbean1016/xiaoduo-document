@@ -648,6 +648,81 @@ select:focus {
   cursor: pointer;
 }
 
+.theme-picker-menu {
+  z-index: 160;
+  width: 220px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 6px;
+  box-shadow: 0 16px 48px var(--shadow);
+}
+
+.theme-picker-title {
+  padding: 5px 8px 7px;
+  color: var(--muted-faint);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.theme-picker-option {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 9px;
+  border-radius: 5px;
+  padding: 0 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  outline: none;
+}
+
+.theme-picker-option > span:nth-child(2) {
+  flex: 1;
+}
+
+.theme-picker-option[data-highlighted],
+.theme-picker-option:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.theme-picker-option.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.theme-picker-swatch {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 65%, transparent);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, white 58%, transparent);
+}
+
+.theme-picker-hint {
+  margin: 5px 4px 2px;
+  border-top: 1px solid var(--line);
+  padding: 8px 4px 2px;
+  color: var(--muted-faint);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.studio-theme-picker-fixed {
+  position: fixed;
+  z-index: 120;
+  top: 18px;
+  right: 24px;
+}
+
+.studio-editor-theme-toggle {
+  width: 34px;
+  height: 34px;
+}
+
 .author-avatar {
   display: inline-flex;
   flex-shrink: 0;
@@ -6471,7 +6546,7 @@ button.markdown-diff-change-item.is-active {
   --studio-surface: var(--paper);
 }
 
-:root:not([data-theme="dark"])[data-studio-surface="warm"] {
+:root:not([data-theme="dark"])[data-theme-surface="warm"] {
   --canvas: #fbf6e7;
   --paper: #fbf6e7;
   --paper-deep: #f6efdc;
@@ -6486,7 +6561,7 @@ button.markdown-diff-change-item.is-active {
   --studio-surface: #fbf6e7;
 }
 
-:root:not([data-theme="dark"])[data-studio-surface="green"] {
+:root:not([data-theme="dark"])[data-theme-surface="green"] {
   --canvas: #edf6ee;
   --paper: #edf6ee;
   --paper-deep: #e5f0e7;
@@ -6501,7 +6576,7 @@ button.markdown-diff-change-item.is-active {
   --studio-surface: #edf6ee;
 }
 
-:root:not([data-theme="dark"])[data-studio-surface="blue"] {
+:root:not([data-theme="dark"])[data-theme-surface="blue"] {
   --canvas: #eef5f7;
   --paper: #eef5f7;
   --paper-deep: #e6eff2;

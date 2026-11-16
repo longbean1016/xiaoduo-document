@@ -4,9 +4,7 @@ import {
   ChevronDown,
   ChevronRight,
   Menu,
-  Moon,
   Search,
-  Sun,
   X,
 } from 'lucide-react'
 import {
@@ -15,6 +13,7 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { BrandMark } from '../BrandMark'
+import { ThemePicker } from '../ThemePicker'
 import { SearchDialog } from './SearchDialog'
 import { categoryNotes, useSiteStore } from '../../store/siteStore'
 import { cn } from '../../lib/utils'
@@ -25,8 +24,6 @@ export function LibraryLayout() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const categories = useSiteStore((state) => state.categories)
   const notes = useSiteStore((state) => state.notes)
-  const themeMode = useSiteStore((state) => state.themeMode)
-  const setThemeMode = useSiteStore((state) => state.setThemeMode)
   const location = useLocation()
 
   const orderedCategories = useMemo(
@@ -89,16 +86,7 @@ export function LibraryLayout() {
             <Search size={19} />
             <span>搜索</span>
           </button>
-          <button
-            type="button"
-            className="library-icon-button"
-            onClick={() =>
-              setThemeMode(themeMode === 'light' ? 'dark' : 'light')
-            }
-            aria-label={themeMode === 'light' ? '切换深色' : '切换浅色'}
-          >
-            {themeMode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
+          <ThemePicker className="library-icon-button" iconSize={20} />
         </div>
       </header>
 

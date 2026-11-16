@@ -59,6 +59,7 @@ import { handleEditorBoundaryKeyDown } from '@/components/editor/editor-boundary
 import { Dialog } from '@/components/ui/dialog'
 import { Hint } from '@/components/ui/tooltip'
 import { StudioSelect } from '@/components/ui/studio-select'
+import { ThemePicker } from '@/components/theme-picker'
 import { VersionHistory, type VersionItem } from './version-history'
 import { MarkdownDiffView } from './markdown-diff-view'
 import { parseDatabaseDateTime } from '@/lib/database-time'
@@ -819,6 +820,7 @@ export function ChapterEditor({
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemePicker className="studio-editor-theme-toggle" />
           <div className="studio-view-switch studio-desktop-compare-switch">
             <button
               type="button"

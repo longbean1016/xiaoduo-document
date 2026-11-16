@@ -13,7 +13,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { BrandMark } from '@/components/brand-mark'
 import { PublicSearchDialog } from '@/components/public-search-dialog'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ThemePicker } from '@/components/theme-picker'
 import type { PublicCategory } from '@/lib/public-library'
 import { cn } from '@/lib/utils'
 
@@ -139,7 +139,7 @@ export function PublicLibraryShell({
             <Search aria-hidden="true" size={19} />
             <span>搜索</span>
           </button>
-          <ThemeToggle className="library-icon-button" iconSize={20} />
+          <ThemePicker className="library-icon-button" iconSize={20} />
         </div>
       </header>
 
