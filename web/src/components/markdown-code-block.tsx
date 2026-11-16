@@ -1,5 +1,6 @@
 import type { RootContent } from 'hast'
 import type { ReactNode } from 'react'
+import { CodeCopyButton } from '@/components/code-copy-button'
 import { MermaidDiagram } from '@/components/mermaid-diagram'
 import { lowlight } from '@/lib/code-highlight'
 
@@ -103,13 +104,17 @@ export function MarkdownCodeBlock({
   if (normalized === 'mermaid') {
     return <MermaidDiagram chart={code} />
   }
+  const copyCode = code.replace(/\r\n?/g, '\n').replace(/\n+$/, '')
 
   return (
     <div
       className="markdown-code-block"
       data-language={normalized}
     >
-      <div className="markdown-code-block-header">{normalized}</div>
+      <div className="markdown-code-block-header">
+        <span>{normalized}</span>
+        <CodeCopyButton code={copyCode} />
+      </div>
       <pre>
         <MarkdownCodeText code={code} language={normalized} />
       </pre>

@@ -2,6 +2,7 @@ import './database-isolation'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
+import { appOrigin } from './app-origin'
 import { createTestConnection } from '../test-db'
 import { seedTestDatabase } from '../seed-test-db'
 
@@ -51,6 +52,7 @@ test.beforeEach(async () => {
 })
 
 test('public reader renders rich Markdown, code and Mermaid', async ({
+  context,
   page,
 }) => {
   await page.goto('/library/attention-and-writing/写作不是归档')
@@ -124,6 +126,28 @@ test('public reader renders rich Markdown, code and Mermaid', async ({
         )
       }),
   ).toBe(57)
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+    origin: appOrigin,
+  })
+  const copyButton = article
+    .locator('.markdown-code-block')
+    .first()
+    .getByRole('button', { name: '复制代码' })
+  await expect(copyButton).toHaveAttribute('data-copy-ready', 'true')
+  await copyButton.click()
+  await expect(
+    article
+      .locator('.markdown-code-block')
+      .first()
+      .getByRole('button', { name: 'Copied' }),
+  ).toContainText('Copied')
+  expect(
+    (
+      await page.evaluate(() => navigator.clipboard.readText())
+    ).replace(/\r\n?/g, '\n'),
+  ).toBe(
+    'public class Demo {\n  public static void main(String[] args) {\n    System.out.println("hello");\n  }\n}',
+  )
   await expect(
     article.locator('pre code.language-custom-unknown'),
   ).toContainText('unknown language stays readable')

@@ -7,6 +7,7 @@ import {
 } from '@tiptap/react'
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
+import { CodeCopyButton } from '@/components/code-copy-button'
 import { MermaidDiagram } from '@/components/mermaid-diagram'
 import { cn } from '@/lib/utils'
 
@@ -35,6 +36,7 @@ export function CodeBlockView({
       ? sourceMode.showSource
       : !isMermaid
   const lineCount = Math.max(1, node.textContent.split('\n').length)
+  const copyCode = node.textContent.replace(/\r\n?/g, '\n')
 
   return (
     <NodeViewWrapper
@@ -78,22 +80,25 @@ export function CodeBlockView({
             }}
           />
         </label>
-        {isMermaid ? (
-          <button
-            type="button"
-            onClick={() =>
-              setSourceMode({
-                language,
-                showSource: !showSource,
-              })
-            }
-            aria-label={showSource ? '显示图表' : '查看源码'}
-            title={showSource ? '显示图表' : '查看源码'}
-          >
-            {showSource ? <Eye size={17} /> : <EyeOff size={17} />}
-            {showSource ? '显示图表' : '查看源码'}
-          </button>
-        ) : null}
+        <div className="editor-code-block-actions">
+          {isMermaid ? (
+            <button
+              type="button"
+              onClick={() =>
+                setSourceMode({
+                  language,
+                  showSource: !showSource,
+                })
+              }
+              aria-label={showSource ? '显示图表' : '查看源码'}
+              title={showSource ? '显示图表' : '查看源码'}
+            >
+              {showSource ? <Eye size={17} /> : <EyeOff size={17} />}
+              {showSource ? '显示图表' : '查看源码'}
+            </button>
+          ) : null}
+          <CodeCopyButton code={copyCode} />
+        </div>
       </div>
 
       <div

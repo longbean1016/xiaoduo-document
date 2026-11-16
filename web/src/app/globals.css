@@ -2748,6 +2748,49 @@ select:focus {
   color: var(--code-ink);
 }
 
+.editor-code-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.code-copy-button {
+  display: inline-flex;
+  height: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  padding: 0 6px;
+  color: var(--code-muted);
+  font: 11px/1 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+.code-copy-button:hover {
+  border-color: var(--code-border);
+  background: color-mix(in srgb, var(--code-ink) 6%, transparent);
+  color: var(--code-ink);
+}
+
+.code-copy-button.is-copied {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
+.code-copy-button svg {
+  flex-shrink: 0;
+}
+
+.editor-code-block-header .code-copy-button {
+  min-height: 24px;
+  padding: 0 6px;
+}
+
 .editor-code-language-field {
   display: inline-flex;
   align-items: center;
@@ -3116,6 +3159,8 @@ select:focus {
   display: flex;
   min-height: var(--code-header-height);
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   border-bottom: 1px solid var(--code-border);
   background: var(--code-header);
   padding: 0 12px;

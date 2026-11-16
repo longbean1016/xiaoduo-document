@@ -2,6 +2,7 @@ import './database-isolation'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
+import { appOrigin } from './app-origin'
 import { seedTestDatabase } from '../seed-test-db'
 
 test.beforeEach(async () => {
@@ -146,6 +147,7 @@ test('code block header accepts manual language and typed fences set language', 
 })
 
 test('editor code blocks use compact aligned metrics and line numbers', async ({
+  context,
   page,
 }) => {
   await page.goto('/studio/login')
@@ -212,6 +214,21 @@ test('editor code blocks use compact aligned metrics and line numbers', async ({
       )
     }),
   ).toBe(57)
+
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+    origin: appOrigin,
+  })
+  const copyButton = block.getByRole('button', { name: '复制代码' })
+  await expect(copyButton).toHaveAttribute('data-copy-ready', 'true')
+  await copyButton.click()
+  await expect(block.getByRole('button', { name: 'Copied' })).toContainText(
+    'Copied',
+  )
+  expect(
+    (
+      await page.evaluate(() => navigator.clipboard.readText())
+    ).replace(/\r\n?/g, '\n'),
+  ).toBe('import sys\n\ndef solution():\n  return []')
 
   const captureDir = process.env.MARKDOWN_CODE_CAPTURE_DIR
   if (captureDir) await mkdir(captureDir, { recursive: true })
