@@ -55,7 +55,10 @@ import {
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createEditorExtensions } from '@/components/editor/extensions'
-import { handleEditorBoundaryKeyDown } from '@/components/editor/editor-boundary-actions'
+import {
+  handleEditorBoundaryKeyDown,
+  handleEditorCopy,
+} from '@/components/editor/editor-boundary-actions'
 import { Dialog } from '@/components/ui/dialog'
 import { Hint } from '@/components/ui/tooltip'
 import { StudioSelect } from '@/components/ui/studio-select'
@@ -214,6 +217,9 @@ export function ChapterEditor({
           'data-save-state': saveState,
         },
         handleKeyDown: handleEditorBoundaryKeyDown,
+        handleDOMEvents: {
+          copy: handleEditorCopy,
+        },
         handlePaste: (_view, event) => {
           const clipboard = event.clipboardData
           if (!clipboard) return false

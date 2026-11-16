@@ -178,7 +178,14 @@ function handleMarkerKeyDown(
       endingMark &&
       $from.parentOffset === $from.parent.content.size
     ) {
-      dispatch(state.tr.setStoredMarks([]))
+      const nextPosition = $from.after($from.depth)
+      if (!$from.doc.nodeAt(nextPosition)) {
+        const transaction = state.tr.split($from.pos)
+        transaction.setStoredMarks([])
+        dispatch(transaction)
+      } else {
+        dispatch(state.tr.setStoredMarks([]))
+      }
       return true
     }
     return false

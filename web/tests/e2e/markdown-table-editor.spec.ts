@@ -90,3 +90,53 @@ test('editor supports pasted and inserted GFM tables', async ({
     )
     .toBeLessThanOrEqual(375)
 })
+
+test('ArrowRight at a formatted paragraph creates a writable row before the table', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData(
+      'text/plain',
+      '**结论**\n\n| 对比项 | 状态 |\n| --- | --- |\n| 表格 | 支持 |\n',
+    )
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+
+  const strong = body.locator('strong')
+  await expect(strong).toHaveText('结论')
+  await strong.click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('ArrowRight')
+  await expect
+    .poll(() =>
+      body.locator('table').evaluate(
+        (table) =>
+          (table.closest('.tableWrapper') ?? table).previousElementSibling
+            ?.tagName ?? '',
+      ),
+    )
+    .toBe('P')
+
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('表格前普通行')
+  await expect(body).toContainText('表格前普通行')
+  await expect(strong).toHaveText('结论')
+  await expect(body.locator('table')).toBeVisible()
+})

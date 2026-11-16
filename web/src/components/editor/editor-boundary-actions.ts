@@ -30,6 +30,30 @@ export function handleEditorBoundaryKeyDown(
   view: EditorView,
   event: KeyboardEvent,
 ) {
+  if (event.key === 'ArrowRight' && view.state.selection.empty) {
+    const { $from } = view.state.selection
+    if (
+      $from.parent.isTextblock &&
+      $from.parentOffset === $from.parent.content.size
+    ) {
+      const nextPosition = $from.after($from.depth)
+      if (view.state.doc.nodeAt(nextPosition)?.type.name === 'table') {
+        const paragraph = view.state.schema.nodes.paragraph?.createAndFill()
+        if (paragraph) {
+          const transaction = view.state.tr.insert(nextPosition, paragraph)
+          transaction.setSelection(
+            TextSelection.near(
+              transaction.doc.resolve(nextPosition + 1),
+            ),
+          )
+          transaction.setStoredMarks([])
+          view.dispatch(transaction)
+          event.preventDefault()
+          return true
+        }
+      }
+    }
+  }
   if (event.key !== 'Enter' || !isFirstTableCellStart(view.state)) {
     return false
   }
@@ -56,6 +80,27 @@ export function handleEditorBoundaryKeyDown(
   return true
 }
 
+export function handleEditorCopy(
+  view: EditorView,
+  event: ClipboardEvent,
+) {
+  if (view.state.selection.empty || !event.clipboardData) return false
+  const { from, to } = view.state.selection
+  const text = view.state.doc.textBetween(from, to, '\n', '\n')
+  if (!text) return false
+
+  event.clipboardData.clearData()
+  event.clipboardData.setData('text/plain', text)
+  const selection = window.getSelection()
+  if (selection?.rangeCount) {
+    const container = document.createElement('div')
+    container.append(selection.getRangeAt(0).cloneContents())
+    event.clipboardData.setData('text/html', container.innerHTML)
+  }
+  event.preventDefault()
+  return true
+}
+
 export const EditorBoundaryActions = Extension.create({
   name: 'editorBoundaryActions',
   priority: 1000,
@@ -65,6 +110,9 @@ export const EditorBoundaryActions = Extension.create({
       new Plugin({
         props: {
           handleKeyDown: handleEditorBoundaryKeyDown,
+          handleDOMEvents: {
+            copy: handleEditorCopy,
+          },
         },
       }),
     ]
