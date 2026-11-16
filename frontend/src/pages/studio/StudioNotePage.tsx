@@ -183,12 +183,19 @@ export function StudioNotePage() {
           const clipboard = event.clipboardData
           if (!clipboard) return false
           const text = clipboard.getData('text/plain')
+          const html = clipboard.getData('text/html')
           if (!text) return false
+          const htmlText = html
+            ? new DOMParser()
+                .parseFromString(html, 'text/html')
+                .body.textContent?.trim()
+            : ''
+          if (htmlText && htmlText !== text.trim()) return false
           const looksLikeMarkdown =
             /(^|\n)\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|~~~|---|\|.+\|)/.test(
               text,
             ) ||
-            /(\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|`[^`\n]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/.test(
+            /(\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_|~~[^~\n]+~~|`[^`\n]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/.test(
               text,
             )
           const currentEditor = editorRef.current
