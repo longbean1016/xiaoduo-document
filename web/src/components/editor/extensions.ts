@@ -19,7 +19,9 @@ import Color from '@tiptap/extension-color'
 import Underline from '@tiptap/extension-underline'
 import { Markdown } from '@tiptap/markdown'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { ReactNodeViewRenderer } from '@tiptap/react'
 import { lowlight } from '@/lib/code-highlight'
+import { CodeBlockView } from './code-block-view'
 import { SlashCommand } from './slash-menu'
 
 export const ZhijianImage = Image.extend({
@@ -69,6 +71,17 @@ const ZhijianHighlight = Highlight.extend({
   },
 })
 
+const ZhijianCodeBlock = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlockView)
+  },
+}).configure({
+  lowlight,
+  defaultLanguage: 'plaintext',
+  enableTabIndentation: true,
+  tabSize: 2,
+})
+
 export function createEditorExtensions(options?: {
   editable?: boolean
 }): AnyExtension[] {
@@ -81,12 +94,7 @@ export function createEditorExtensions(options?: {
       underline: false,
       codeBlock: false,
     }),
-    CodeBlockLowlight.configure({
-      lowlight,
-      defaultLanguage: 'plaintext',
-      enableTabIndentation: true,
-      tabSize: 2,
-    }),
+    ZhijianCodeBlock,
     ...(editable
       ? [
           Placeholder.configure({

@@ -14,6 +14,7 @@ export const codeLanguageOptions = [
   { value: 'css', label: 'CSS' },
   { value: 'markdown', label: 'Markdown' },
   { value: 'yaml', label: 'YAML' },
+  { value: 'mermaid', label: 'Mermaid 图表' },
 ] as const
 
 export function codeLanguageLabel(language: string | null | undefined) {

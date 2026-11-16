@@ -2096,7 +2096,10 @@ function StudioToolbar({
           )}
         </ToolbarButton>
       </div>
-      <div className="ml-auto flex items-center gap-0.5">
+      <div
+        className="ml-auto flex items-center gap-0.5"
+        data-visual-dynamic
+      >
         <ToolbarButton
           label="撤销"
           onClick={() => editor.chain().focus().undo().run()}

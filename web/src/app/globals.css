@@ -2660,6 +2660,115 @@ select:focus {
   font-weight: 700;
 }
 
+.editor-code-block {
+  margin: 1.6em 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 82%, transparent);
+  border-radius: 7px;
+  background: #17201b;
+  color: #d8e5dc;
+}
+
+.editor-code-block.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.editor-code-block-header {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5px 8px 5px 12px;
+  color: rgba(226, 239, 230, 0.68);
+  font: 11px/1.4 "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.editor-code-block-header button {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  gap: 5px;
+  border-radius: 4px;
+  padding: 0 7px;
+  color: rgba(226, 239, 230, 0.78);
+  font-size: 11px;
+}
+
+.editor-code-block-header button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.editor-code-block pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.editor-code-block-source-hidden {
+  display: none;
+}
+
+.editor-code-block .mermaid-diagram {
+  border: 0;
+  border-radius: 0;
+  background: var(--paper);
+}
+
+.mermaid-diagram {
+  min-height: 150px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  padding: 18px;
+}
+
+.mermaid-diagram-canvas {
+  display: flex;
+  min-width: min-content;
+  justify-content: center;
+}
+
+.mermaid-diagram-canvas svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.mermaid-diagram-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.mermaid-diagram-error {
+  color: var(--rust);
+  font-size: 13px;
+}
+
+.mermaid-diagram-error p {
+  margin: 5px 0 10px;
+}
+
+.mermaid-diagram-error pre {
+  overflow-x: auto;
+  margin: 0;
+  border-radius: 4px;
+  background: var(--paper-deep);
+  padding: 10px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
 .zhijian-prose a {
   color: var(--accent);
   text-decoration: underline;

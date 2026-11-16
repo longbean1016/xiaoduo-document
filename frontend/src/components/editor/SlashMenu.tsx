@@ -23,6 +23,7 @@ import {
   Pilcrow,
   Quote,
   Table2,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -123,6 +124,19 @@ const items: SlashItem[] = [
     keywords: ['code', 'daima'],
     run: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
+  },
+  {
+    title: 'Mermaid 图表',
+    hint: '流程图、时序图等',
+    icon: Workflow,
+    keywords: ['mermaid', 'diagram', 'flowchart', 'liuchengtu'],
+    run: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setCodeBlock({ language: 'mermaid' })
+        .run(),
   },
   {
     title: '表格',
