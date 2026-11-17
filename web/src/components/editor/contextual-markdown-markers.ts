@@ -119,7 +119,7 @@ function buildDecorations(
         markerWidget(blockPrefix, -1, 'block'),
         {
           key: `block-${$from.pos}-${blockPrefix}`,
-          side: 1,
+          side: -1,
         },
       ),
     )

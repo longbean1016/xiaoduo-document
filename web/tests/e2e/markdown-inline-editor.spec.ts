@@ -95,6 +95,29 @@ test('editor converts typed Markdown inline syntax', async ({ page }) => {
   await expect(body.locator('em')).toHaveText('键盘斜体')
 })
 
+test('typing inside empty bold markers does not duplicate the first letter', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('****')
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.insertText('甲')
+
+  await expect(body.locator('strong')).toHaveText('甲')
+  await expect(body).toHaveText('甲')
+})
+
 test('plain text with unmatched markers stays literal', async ({ page }) => {
   await page.goto('/studio/login')
   await page.getByRole('button', { name: '站主密码登录' }).click()
@@ -595,6 +618,66 @@ test('ArrowLeft reaches the first heading prefix without creating a paragraph', 
       ),
     )
     .toBe('P')
+})
+
+test('typing at the first heading character inserts before it', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.getByRole('button', { name: '二级标题' }).click()
+  await page.keyboard.type('我怕时间哦')
+  const heading = body.getByRole('heading', { name: '我怕时间哦' })
+  await heading.click()
+  await page.keyboard.press('Home')
+  await page.keyboard.type('前')
+
+  await expect(
+    body.getByRole('heading', { name: '前我怕时间哦' }),
+  ).toBeVisible()
+})
+
+test('a single blank line uses compact vertical spacing', async ({ page }) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData('text/plain', '我\n\n## 我怕时间哦\n')
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+  const paragraph = body.getByText('我', { exact: true })
+  const heading = body.getByRole('heading', { name: '我怕时间哦' })
+  const paragraphBox = await paragraph.boundingBox()
+  const headingBox = await heading.boundingBox()
+  if (!paragraphBox || !headingBox) throw new Error('找不到间距测量元素')
+
+  expect(headingBox.y - (paragraphBox.y + paragraphBox.height)).toBeLessThan(
+    40,
+  )
 })
 
 test('ArrowUp does not create a paragraph at the first block', async ({

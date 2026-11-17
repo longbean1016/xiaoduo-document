@@ -148,6 +148,47 @@ test('code block header accepts manual language and typed fences set language', 
   ).toHaveValue('text')
 })
 
+test('ArrowUp and ArrowDown can leave a code block before and after it', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await body.evaluate((element) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData('text/plain', '```text\ncode\n```\n')
+    element.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: clipboard,
+      }),
+    )
+  })
+  const codeBlock = body.locator('.editor-code-block')
+  await expect(codeBlock).toBeVisible()
+
+  await codeBlock.getByText('code', { exact: true }).click()
+  await page.keyboard.press('ArrowUp')
+  await page.keyboard.type('前文')
+  await expect(body).toContainText('前文')
+  await expect(codeBlock).toContainText('code')
+
+  await codeBlock.getByText('code', { exact: true }).click()
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.type('后文')
+  await expect(body).toContainText('后文')
+  await expect(codeBlock).toContainText('code')
+})
+
 test('editor code blocks use compact aligned metrics and line numbers', async ({
   context,
   page,

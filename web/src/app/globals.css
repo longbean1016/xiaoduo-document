@@ -2651,6 +2651,19 @@ select:focus {
   margin: 0;
 }
 
+.zhijian-prose
+  p:has(> br.ProseMirror-trailingBreak:only-child) {
+  min-height: 0.8em;
+  margin-top: 0.15em;
+  line-height: 0.8;
+}
+
+.zhijian-prose
+  p:has(> br.ProseMirror-trailingBreak:only-child)
+  + :is(h1, h2, h3, h4, h5) {
+  margin-top: 0.2em;
+}
+
 .zhijian-prose h1,
 .zhijian-prose h2,
 .zhijian-prose h3,
@@ -4554,6 +4567,14 @@ select:focus {
   margin: 1.8em 0 0.55em;
   font-size: 1.28em;
   font-weight: 700;
+}
+
+.studio-prose.zhijian-prose h1,
+.studio-prose.zhijian-prose h2,
+.studio-prose.zhijian-prose h3,
+.studio-prose.zhijian-prose h4,
+.studio-prose.zhijian-prose h5 {
+  margin-top: 0.8em;
 }
 
 .studio-prose h4 {
