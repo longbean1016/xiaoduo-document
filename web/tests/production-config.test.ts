@@ -36,4 +36,11 @@ describe('production deployment configuration', () => {
       "export const dynamic = 'force-dynamic'",
     )
   })
+
+  it('renders the database-backed search route at request time', async () => {
+    const searchLayout = await read('src/app/search/layout.tsx')
+    expect(searchLayout).toContain(
+      "export const dynamic = 'force-dynamic'",
+    )
+  })
 })
