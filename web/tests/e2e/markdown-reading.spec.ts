@@ -193,3 +193,36 @@ test('public reader renders rich Markdown, code and Mermaid', async ({
     }
   }
 })
+
+test('reading headings use the same compact blank-line spacing as the editor', async ({
+  page,
+}) => {
+  const connection = await createTestConnection()
+  try {
+    const markdown = '我\n\n## 我怕时间哦\n'
+    await connection.query(
+      'UPDATE article SET markdown = ?, plain_text = ? WHERE id = ?',
+      [markdown, '我 我怕时间哦', 'article-1'],
+    )
+    await connection.query(
+      `UPDATE article_version
+       SET markdown = ?, plain_text = ?
+       WHERE id = ?`,
+      [markdown, '我 我怕时间哦', 'version-1'],
+    )
+  } finally {
+    await connection.end()
+  }
+
+  await page.goto('/library/attention-and-writing/写作不是归档')
+  const article = page.locator('.markdown-body')
+  const paragraph = article.getByText('我', { exact: true })
+  const heading = article.getByRole('heading', { name: '我怕时间哦' })
+  const paragraphBox = await paragraph.boundingBox()
+  const headingBox = await heading.boundingBox()
+  if (!paragraphBox || !headingBox) throw new Error('找不到阅读页间距元素')
+
+  expect(headingBox.y - (paragraphBox.y + paragraphBox.height)).toBeLessThan(
+    40,
+  )
+})

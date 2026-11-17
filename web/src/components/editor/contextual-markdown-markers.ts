@@ -148,10 +148,39 @@ function buildDecorations(
       ),
     ]
   })
+  const activeMarkKeys = new Set(
+    ranges
+      .filter((range) => cursor >= range.from && cursor <= range.to)
+      .map((range) => range.key),
+  )
+  const pendingDecorations = (state.storedMarks ?? []).flatMap((mark) => {
+    const syntax = markSyntax(mark.type.name, mark.attrs.href)
+    const key = `${mark.type.name}:${JSON.stringify(mark.attrs)}`
+    if (!syntax || activeMarkKeys.has(key)) return []
+    return [
+      Decoration.widget(
+        cursor,
+        markerWidget(syntax.open, -1, mark.type.name),
+        {
+          key: `pending-open-${key}-${cursor}`,
+          side: -1,
+        },
+      ),
+      Decoration.widget(
+        cursor,
+        markerWidget(syntax.close, 1, mark.type.name),
+        {
+          key: `pending-close-${key}-${cursor}`,
+          side: 1,
+        },
+      ),
+    ]
+  })
 
   return DecorationSet.create(state.doc, [
     ...blockDecorations,
     ...decorations,
+    ...pendingDecorations,
   ])
 }
 

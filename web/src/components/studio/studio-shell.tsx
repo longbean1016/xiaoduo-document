@@ -294,6 +294,7 @@ export function StudioShell({
 
       <main className="studio-main">
         <div
+          key={pathname}
           className={cn(
             'studio-route-view',
             isEditor && 'is-editor',

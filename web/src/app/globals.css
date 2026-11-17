@@ -1333,6 +1333,7 @@ select:focus {
 
 .library-route-view {
   min-height: 100%;
+  animation: route-reveal 380ms cubic-bezier(0.2, 0.72, 0.24, 1) both;
   transform-origin: 50% 0;
 }
 
@@ -1536,6 +1537,7 @@ select:focus {
 
 .studio-route-view {
   min-height: 100%;
+  animation: route-reveal 320ms cubic-bezier(0.2, 0.72, 0.24, 1) both;
   transform-origin: 50% 0;
 }
 
@@ -1543,6 +1545,22 @@ select:focus {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+}
+
+@keyframes route-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+
+  55% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .studio-shell-fixture-content {
@@ -3150,6 +3168,14 @@ select:focus {
   margin: 1.4em 0 0.45em;
   font-size: 0.92em;
   font-weight: 650;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5 {
+  margin-top: 0.8em;
 }
 
 .markdown-body strong {

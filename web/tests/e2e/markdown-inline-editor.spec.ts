@@ -118,6 +118,57 @@ test('typing inside empty bold markers does not duplicate the first letter', asy
   await expect(body).toHaveText('甲')
 })
 
+test('empty inline formatting keeps its Markdown markers visible', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('**甲**')
+  const strong = body.locator('strong')
+  await expect(strong).toHaveText('甲')
+  await strong.click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Backspace')
+
+  await expect
+    .poll(() => markerValues(body.locator('.markdown-context-marker')))
+    .toEqual(['**', '**'])
+})
+
+test('italic Markdown renders at the beginning of a paragraph', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('*段首斜体*')
+
+  await expect(body.locator('em')).toHaveText('段首斜体')
+  await expect(body.locator('ul')).toHaveCount(0)
+
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('_下划线斜体_')
+  await expect(body.locator('em')).toHaveText('下划线斜体')
+})
+
 test('plain text with unmatched markers stays literal', async ({ page }) => {
   await page.goto('/studio/login')
   await page.getByRole('button', { name: '站主密码登录' }).click()
