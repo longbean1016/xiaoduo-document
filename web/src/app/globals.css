@@ -3560,7 +3560,8 @@ select:focus {
   margin-top: 28px;
 }
 
-.invite-field > span {
+.invite-field > span,
+.invite-field > label {
   display: block;
   margin-bottom: 8px;
   color: var(--ink-soft);
@@ -3590,10 +3591,50 @@ select:focus {
   font-size: 16px;
 }
 
+.invite-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+}
+
+.invite-code-action {
+  display: inline-flex;
+  min-width: 132px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  padding: 0 12px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.invite-code-action:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.invite-code-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .invite-expiry {
   color: var(--muted-faint);
   font-size: 13px;
   line-height: 20px;
+}
+
+.invite-form-notice {
+  border-radius: 5px;
+  background: var(--accent-soft);
+  padding: 9px 11px;
+  color: var(--ink-soft);
+  font-size: 13px;
 }
 
 .invite-form-error {
@@ -3663,6 +3704,14 @@ select:focus {
   .invite-accept-card,
   .invite-state-card {
     padding: 22px 18px;
+  }
+
+  .invite-code-row {
+    grid-template-columns: 1fr;
+  }
+
+  .invite-code-action {
+    width: 100%;
   }
 }
 

@@ -54,12 +54,14 @@ export default async function InvitationActivationPage({
         <p className="section-kicker mt-8">Collaboration invitation</p>
         <h1>接受协作邀请</h1>
         <p className="invite-accept-intro">
-          设置账号后，你只会看到下面这些被授权的文章。
+          输入邮箱并完成验证码验证，即可进入写作台。你只会看到下面这些被授权的文章。
         </p>
-        <div className="invite-account-email">
-          <Mail size={19} />
-          <span>{invite.email}</span>
-        </div>
+        {invite.email ? (
+          <div className="invite-account-email">
+            <Mail size={19} />
+            <span>邀请已绑定：{invite.email}</span>
+          </div>
+        ) : null}
         <div className="invite-scope-list">
           <p>可编辑文章</p>
           {invite.articleTitles.map((title) => (
@@ -68,6 +70,7 @@ export default async function InvitationActivationPage({
         </div>
         <InvitationActivationForm
           token={token}
+          initialEmail={invite.email ?? ''}
           initialDisplayName={invite.displayName ?? ''}
           expiresAt={formatDateTime(invite.expiresAt.toISOString())}
         />
