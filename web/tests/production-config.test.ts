@@ -29,4 +29,11 @@ describe('production deployment configuration', () => {
     expect(deployment).toContain('cron')
     expect(deployment).toContain('health')
   })
+
+  it('renders the database-backed public home page at request time', async () => {
+    const homePage = await read('src/app/page.tsx')
+    expect(homePage).toContain(
+      "export const dynamic = 'force-dynamic'",
+    )
+  })
 })
