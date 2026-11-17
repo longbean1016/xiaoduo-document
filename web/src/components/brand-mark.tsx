@@ -22,9 +22,10 @@ export function BrandMark({
         <Image
           src="/xiaoduo-mark.jpg"
           alt=""
-          width={40}
-          height={40}
-          sizes="36px"
+          width={192}
+          height={192}
+          sizes="128px"
+          quality={100}
           draggable={false}
         />
       </span>

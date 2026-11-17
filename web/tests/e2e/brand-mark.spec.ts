@@ -89,3 +89,31 @@ test('Xiaoduo avatar source is high resolution and square', async ({
   expect(dimensions.width).toBeGreaterThanOrEqual(512)
   expect(dimensions.height).toBeGreaterThanOrEqual(512)
 })
+
+test('brand portrait loads enough pixels for a crisp circle', async ({
+  page,
+}) => {
+  await page.goto('/library')
+
+  const image = page.locator('.library-brand .brand-mark-icon img')
+  await image.evaluate(async (element) => {
+    const imageElement = element as HTMLImageElement
+    if (imageElement.complete) return
+    await new Promise<void>((resolve) => {
+      imageElement.addEventListener('load', () => resolve(), { once: true })
+      imageElement.addEventListener('error', () => resolve(), { once: true })
+    })
+  })
+  const metrics = await image.evaluate((element) => {
+    const imageElement = element as HTMLImageElement
+    return {
+      complete: imageElement.complete,
+      naturalWidth: imageElement.naturalWidth,
+      transform: getComputedStyle(imageElement).transform,
+    }
+  })
+
+  expect(metrics.complete).toBe(true)
+  expect(metrics.naturalWidth).toBeGreaterThanOrEqual(96)
+  expect(metrics.transform).toBe('none')
+})
