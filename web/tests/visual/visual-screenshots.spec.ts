@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
+import { auth } from '../../src/lib/auth'
 import { compareVisualScreenshots } from './compare'
 import { visualFixture } from './fixture'
 import {
@@ -70,20 +71,30 @@ async function prepareProductionPage(
     document.documentElement.style.colorScheme = theme
   }, themeMode)
   if (role) {
-    const login = await page.request.post(
-      `${visualOrigins.production}/api/auth/sign-in/email`,
-      {
-        headers: { origin: visualOrigins.production },
-        data: {
-          email:
-            role === 'owner' ? 'owner@example.com' : 'zhou@example.com',
-          password:
-            role === 'owner'
-              ? 'owner-test-password'
-              : 'collaborator-password',
-        },
-      },
-    )
+    const login =
+      role === 'owner'
+        ? await page.request.post(
+            `${visualOrigins.production}/api/auth/sign-in/email`,
+            {
+              headers: { origin: visualOrigins.production },
+              data: {
+                email: 'owner@example.com',
+                password: 'owner-test-password',
+              },
+            },
+          )
+        : await (async () => {
+            const otp = await auth.api.createVerificationOTP({
+              body: { email: 'zhou@example.com', type: 'sign-in' },
+            })
+            return page.request.post(
+              `${visualOrigins.production}/api/collaboration/login/verify-otp`,
+              {
+                headers: { origin: visualOrigins.production },
+                data: { email: 'zhou@example.com', otp },
+              },
+            )
+          })()
     expect(login.ok()).toBeTruthy()
   }
   await page.goto(`${visualOrigins.production}${targetPath}`)

@@ -3,6 +3,7 @@ import { hashPassword } from 'better-auth/crypto'
 import { expect, test, type Page } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { appOrigin } from './app-origin'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeAll(async () => {
   const connection = await createTestConnection()
@@ -40,14 +41,6 @@ test.beforeAll(async () => {
   }
 })
 
-async function login(page: Page, email: string) {
-  await page.goto('/studio/login')
-  await page.getByLabel('邮箱').fill(email)
-  await page.getByLabel('密码').fill('collaborator-password')
-  await page.getByRole('button', { name: '进入写作台' }).click()
-  await expect(page).toHaveURL(/\/studio$/)
-}
-
 async function moveToTrash(page: Page, title: string) {
   await page.getByRole('button', { name: '删除', exact: true }).click()
   await page.getByRole('checkbox', { name: `选择 ${title}` }).check()
@@ -63,7 +56,7 @@ test('collaborators batch restore only their own trash actor items', async ({
 }) => {
   const firstContext = await browser.newContext()
   const firstPage = await firstContext.newPage()
-  await login(firstPage, 'trash-a@example.com')
+  await loginAsCollaborator(firstPage, 'trash-a@example.com')
   await moveToTrash(firstPage, '写作不是归档')
   await firstPage.getByRole('link', { name: '回收站' }).click()
   await expect(firstPage).toHaveURL(/\/studio\/trash$/)
@@ -78,7 +71,7 @@ test('collaborators batch restore only their own trash actor items', async ({
 
   const secondContext = await browser.newContext()
   const secondPage = await secondContext.newPage()
-  await login(secondPage, 'trash-b@example.com')
+  await loginAsCollaborator(secondPage, 'trash-b@example.com')
   await moveToTrash(secondPage, '长期维护')
   await secondPage.getByRole('link', { name: '回收站' }).click()
   await expect(secondPage).toHaveURL(/\/studio\/trash$/)

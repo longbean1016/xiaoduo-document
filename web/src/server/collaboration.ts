@@ -4,7 +4,6 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db/client'
 import {
   account,
-  articleGrant,
   article,
   collaborationApplication,
   collaborationInvite,
@@ -38,25 +37,6 @@ export interface InviteRecord {
   expiresAt: Date
   createdAt: Date
   token?: string
-}
-
-export interface ActivatedInvitation {
-  status: 'activated'
-  userId: string
-  email: string
-  displayName: string
-}
-
-export interface AlreadyActivatedInvitation {
-  status: 'already-activated'
-}
-
-export interface ExpiredInvitation {
-  status: 'expired'
-}
-
-export interface RevokedInvitation {
-  status: 'revoked'
 }
 
 export interface InvitationActivationPreview {
@@ -395,116 +375,6 @@ export async function getInvitationActivationPreview(
     status,
     expiresAt: invite.expiresAt,
   }
-}
-
-export async function activateInvitation(input: {
-  token: string
-  displayName: string
-  password: string
-}): Promise<
-  | ActivatedInvitation
-  | AlreadyActivatedInvitation
-  | ExpiredInvitation
-  | RevokedInvitation
-> {
-  return db.transaction(async (transaction) => {
-    const [invite] = await transaction
-      .select()
-      .from(collaborationInvite)
-      .where(eq(collaborationInvite.tokenHash, hashToken(input.token)))
-      .for('update')
-      .limit(1)
-    if (!invite) throw new Error('INVITE_NOT_FOUND')
-    if (invite.status === 'activated') {
-      return { status: 'already-activated' }
-    }
-    if (invite.status === 'revoked') {
-      return { status: 'revoked' }
-    }
-    if (
-      invite.status === 'expired' ||
-      invite.expiresAt.getTime() <= Date.now()
-    ) {
-      if (invite.status !== 'expired') {
-        await transaction
-          .update(collaborationInvite)
-          .set({ status: 'expired' })
-          .where(eq(collaborationInvite.id, invite.id))
-        await notifyInvitation(invite, 'expired')
-      }
-      return { status: 'expired' }
-    }
-
-    if (!invite.email) throw new Error('INVITE_NOT_BOUND')
-    const email = normalizeEmail(invite.email)
-    const displayName = input.displayName.trim()
-    const passwordHash = await hashPassword(input.password)
-    const [existingUser] = await transaction
-      .select()
-      .from(user)
-      .where(eq(user.email, email))
-      .limit(1)
-    const userId = existingUser?.id ?? randomUUID()
-
-    if (!existingUser) {
-      await transaction.insert(user).values({
-        id: userId,
-        name: displayName,
-        email,
-        role: 'collaborator',
-        status: 'active',
-      })
-    }
-
-    const [credentialAccount] = await transaction
-      .select({ id: account.id })
-      .from(account)
-      .where(
-        and(
-          eq(account.userId, userId),
-          eq(account.providerId, 'credential'),
-        ),
-      )
-      .limit(1)
-    if (credentialAccount) {
-      await transaction
-        .update(account)
-        .set({ password: passwordHash, updatedAt: new Date() })
-        .where(eq(account.id, credentialAccount.id))
-    } else {
-      await transaction.insert(account).values({
-        id: randomUUID(),
-        accountId: userId,
-        providerId: 'credential',
-        userId,
-        password: passwordHash,
-      })
-    }
-
-    const inviteArticles = await transaction
-      .select({ articleId: collaborationInviteArticle.articleId })
-      .from(collaborationInviteArticle)
-      .where(eq(collaborationInviteArticle.inviteId, invite.id))
-    for (const { articleId } of inviteArticles) {
-      await transaction
-        .insert(articleGrant)
-        .values({ userId, articleId })
-        .onDuplicateKeyUpdate({ set: { articleId } })
-    }
-
-    await transaction
-      .update(collaborationInvite)
-      .set({ status: 'activated' })
-      .where(eq(collaborationInvite.id, invite.id))
-    await notifyInvitation(invite, 'activated')
-
-    return {
-      status: 'activated',
-      userId,
-      email,
-      displayName,
-    }
-  })
 }
 
 export async function setCollaboratorStatus(

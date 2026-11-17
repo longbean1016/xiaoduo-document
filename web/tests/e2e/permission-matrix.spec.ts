@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { seedTestDatabase } from '../seed-test-db'
 import { appOrigin } from './app-origin'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 const origin = appOrigin
 
@@ -100,11 +101,7 @@ test('owner, collaborator and reader capabilities follow the permission matrix',
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await login(
-    collaboratorPage,
-    'matrix@example.com',
-    'collaborator-password',
-  )
+  await loginAsCollaborator(collaboratorPage, 'matrix@example.com')
   await expect(
     collaboratorPage.getByRole('link', { name: '写作不是归档' }),
   ).toBeVisible()

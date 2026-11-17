@@ -2,6 +2,7 @@ import './database-isolation'
 import { hashPassword } from 'better-auth/crypto'
 import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeAll(async () => {
   const connection = await createTestConnection()
@@ -59,15 +60,7 @@ test('owner downloads a complete ZIP while collaborators cannot', async ({
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await collaboratorPage.goto('/studio/login')
-  await collaboratorPage
-    .getByLabel('邮箱')
-    .fill('export-24@example.com')
-  await collaboratorPage
-    .getByLabel('密码')
-    .fill('collaborator-password')
-  await collaboratorPage.getByRole('button', { name: '进入写作台' }).click()
-  await expect(collaboratorPage).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(collaboratorPage, 'export-24@example.com')
   expect(
     (await collaboratorPage.request.get('/api/studio/export')).status(),
   ).toBe(403)

@@ -27,6 +27,10 @@ test('owner can sign in, update site profile, and revoke the session', async ({
   await expect(page.getByLabel('所在城市')).toHaveCount(0)
 
   await page.getByRole('button', { name: '退出写作台' }).click()
+  await page
+    .getByRole('alertdialog', { name: '退出登录？' })
+    .getByRole('button', { name: '退出登录' })
+    .click()
   await page.goto('/studio')
   await expect(page).toHaveURL(/\/studio\/login/)
 })

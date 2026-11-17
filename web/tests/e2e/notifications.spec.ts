@@ -3,6 +3,7 @@ import { hashPassword } from 'better-auth/crypto'
 import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { appOrigin } from './app-origin'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeAll(async () => {
   const connection = await createTestConnection()
@@ -75,15 +76,7 @@ test('owner reviews applications through notifications only', async ({
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await collaboratorPage.goto('/studio/login')
-  await collaboratorPage
-    .getByLabel('邮箱')
-    .fill('notify-20@example.com')
-  await collaboratorPage
-    .getByLabel('密码')
-    .fill('collaborator-password')
-  await collaboratorPage.getByRole('button', { name: '进入写作台' }).click()
-  await expect(collaboratorPage).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(collaboratorPage, 'notify-20@example.com')
   expect(
     (
       await collaboratorPage.request.get('/api/studio/notifications', {

@@ -2,6 +2,7 @@ import './database-isolation'
 import { hashPassword } from 'better-auth/crypto'
 import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeAll(async () => {
   const connection = await createTestConnection()
@@ -38,11 +39,7 @@ test.beforeAll(async () => {
 test('collaborator saves a shared version and publishes as a contributor', async ({
   page,
 }) => {
-  await page.goto('/studio/login')
-  await page.getByLabel('邮箱').fill('publisher@example.com')
-  await page.getByLabel('密码').fill('collaborator-password')
-  await page.getByRole('button', { name: '进入写作台' }).click()
-  await expect(page).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(page, 'publisher@example.com')
 
   await page.goto('/studio/notes/article-1')
   await page.getByRole('button', { name: '版本历史' }).click()

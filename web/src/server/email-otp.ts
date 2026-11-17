@@ -287,6 +287,16 @@ export async function requestCollaboratorLoginOtp(input: {
   mailer: OtpEmailSender
 }) {
   const email = normalizeEmail(input.email)
+  await requireActiveCollaborator(email)
+  await createAndSendOtp({
+    email,
+    ip: input.ip,
+    mailer: input.mailer,
+    purpose: 'collaborator_login',
+  })
+}
+
+async function requireActiveCollaborator(email: string) {
   const [existing] = await db
     .select({ id: user.id, role: user.role, status: user.status })
     .from(user)
@@ -296,10 +306,19 @@ export async function requestCollaboratorLoginOtp(input: {
     throw new Error('COLLABORATOR_NOT_FOUND')
   }
   if (existing.status !== 'active') throw new Error('ACCOUNT_SUSPENDED')
-  await createAndSendOtp({
-    email,
-    ip: input.ip,
-    mailer: input.mailer,
-    purpose: 'collaborator_login',
+  return existing
+}
+
+export async function verifyCollaboratorLoginOtp(input: {
+  email: string
+  otp: string
+  headers: Headers
+}) {
+  const email = normalizeEmail(input.email)
+  await requireActiveCollaborator(email)
+  return auth.api.signInEmailOTP({
+    asResponse: true,
+    body: { email, otp: input.otp },
+    headers: input.headers,
   })
 }

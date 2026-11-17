@@ -7286,6 +7286,10 @@ button.markdown-diff-change-item.is-active {
   text-align: left;
 }
 
+.studio-login-field > label {
+  display: block;
+}
+
 .studio-login-password-heading {
   display: flex;
   align-items: center;
@@ -7346,6 +7350,45 @@ button.markdown-diff-change-item.is-active {
   box-shadow: 0 0 0 2px #e5f0eb;
 }
 
+.studio-login-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.studio-login-code-row .studio-login-input-wrap {
+  margin-top: 0;
+}
+
+.studio-login-code-action {
+  display: inline-flex;
+  min-width: 126px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dcd7cb;
+  border-radius: 8px;
+  background: #fffcf5;
+  padding: 0 12px;
+  color: #1d6658;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.studio-login-code-action:hover:not(:disabled) {
+  border-color: #1d6658;
+  background: #f4f8f5;
+}
+
+.studio-login-code-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .studio-login-password-toggle {
   position: absolute;
   top: 50%;
@@ -7373,6 +7416,17 @@ button.markdown-diff-change-item.is-active {
   background: #ffdad6;
   padding: 8px 10px;
   color: #93000a;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 18px;
+}
+
+.studio-login-notice {
+  border-radius: 4px;
+  background: #e5f0eb;
+  padding: 8px 10px;
+  color: #1d6658;
   font-family: "Noto Sans SC", sans-serif;
   font-size: 12px;
   letter-spacing: 0;
@@ -7456,6 +7510,14 @@ button.markdown-diff-change-item.is-active {
 
   .studio-login-card {
     padding: 30px 26px;
+  }
+
+  .studio-login-code-row {
+    grid-template-columns: 1fr;
+  }
+
+  .studio-login-code-action {
+    width: 100%;
   }
 
   .studio-login-card-header h1 {

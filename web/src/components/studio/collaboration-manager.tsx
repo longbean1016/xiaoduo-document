@@ -94,7 +94,6 @@ export function CollaborationManager({
   const [section, setSection] = useState<Section>('applications')
   const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([])
   const [generatedInviteLink, setGeneratedInviteLink] = useState('')
-  const [resetLink, setResetLink] = useState('')
   const [editingCollaborator, setEditingCollaborator] =
     useState<Collaborator | null>(null)
   const [editArticleIds, setEditArticleIds] = useState<string[]>([])
@@ -197,25 +196,6 @@ export function CollaborationManager({
           : '账号已恢复'
         : '账号状态更新失败',
     )
-    router.refresh()
-  }
-
-  async function createReset(userId: string) {
-    const response = await fetch(
-      `/api/studio/collaboration/collaborators/${userId}/password-reset`,
-      { method: 'POST' },
-    )
-    const payload = (await response.json()) as {
-      reset?: { token: string }
-    }
-    if (payload.reset?.token) {
-      setResetLink(
-        `${window.location.origin}/collaborate/reset/${payload.reset.token}`,
-      )
-      setMessage('密码重置链接已生成')
-    } else {
-      setMessage('密码重置链接生成失败')
-    }
     router.refresh()
   }
 
@@ -336,26 +316,6 @@ export function CollaborationManager({
           </button>
         </label>
       ) : null}
-      {resetLink ? (
-        <label className="collaboration-generated-link">
-          <span>密码重置链接</span>
-          <input
-            readOnly
-            value={resetLink}
-            aria-label="密码重置链接"
-            onFocus={(event) => event.currentTarget.select()}
-          />
-          <button
-            type="button"
-            className="studio-icon-button"
-            aria-label="复制密码重置链接"
-            onClick={() => void copy(resetLink, '重置链接已复制')}
-          >
-            <Copy size={18} />
-          </button>
-        </label>
-      ) : null}
-
       <div className="collaboration-tabs" role="tablist" aria-label="协作管理">
         {(
           [
@@ -603,15 +563,6 @@ export function CollaborationManager({
                     ) : (
                       <RotateCcw size={19} />
                     )}
-                  </button>
-                  <button
-                    type="button"
-                    className="studio-icon-button"
-                    onClick={() => void createReset(collaborator.id)}
-                    aria-label={`生成重置链接 ${collaborator.name}`}
-                    title="生成密码重置链接"
-                  >
-                    <RotateCcw size={19} />
                   </button>
                 </article>
               )

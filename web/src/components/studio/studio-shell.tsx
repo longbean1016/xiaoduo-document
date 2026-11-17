@@ -350,7 +350,11 @@ export function StudioShell({
         open={signOutOpen}
         onOpenChange={setSignOutOpen}
         title="退出登录？"
-        description="退出后需要重新输入邮箱和密码才能进入写作台。"
+        description={
+          role === 'owner'
+            ? '退出后需要重新输入邮箱和密码才能进入写作台。'
+            : '退出后需要重新通过邮箱验证码进入写作台。'
+        }
         confirmLabel="退出登录"
         onConfirm={() => signOutFormRef.current?.requestSubmit()}
       />

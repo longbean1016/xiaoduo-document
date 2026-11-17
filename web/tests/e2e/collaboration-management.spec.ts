@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { seedTestDatabase } from '../seed-test-db'
 import { appOrigin } from './app-origin'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeEach(async () => {
   await seedTestDatabase()
@@ -38,20 +39,12 @@ test.beforeEach(async () => {
   }
 })
 
-test('owner suspends, restores, and resets a collaborator account', async ({
+test('owner suspends and restores a collaborator account', async ({
   browser,
 }) => {
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await collaboratorPage.goto('/studio/login')
-  await collaboratorPage
-    .getByLabel('邮箱')
-    .fill('managed-19@example.com')
-  await collaboratorPage
-    .getByLabel('密码')
-    .fill('old-collaborator-password')
-  await collaboratorPage.getByRole('button', { name: '进入写作台' }).click()
-  await expect(collaboratorPage).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(collaboratorPage, 'managed-19@example.com')
 
   const ownerContext = await browser.newContext()
   const ownerPage = await ownerContext.newPage()
@@ -81,84 +74,25 @@ test('owner suspends, restores, and resets a collaborator account', async ({
     .click()
   await expect(ownerPage.getByText('账号已恢复')).toBeVisible()
 
-  await collaboratorPage.getByLabel('邮箱').fill('managed-19@example.com')
-  await collaboratorPage
-    .getByLabel('密码')
-    .fill('old-collaborator-password')
-  await collaboratorPage.getByRole('button', { name: '进入写作台' }).click()
-  await expect(collaboratorPage).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(collaboratorPage, 'managed-19@example.com')
   await expect(
     collaboratorPage.getByRole('link', { name: '写作不是归档' }),
   ).toBeVisible()
 
-  await ownerPage
-    .getByRole('button', { name: '生成重置链接 协作者十九' })
-    .click()
-  const resetLink = await ownerPage
-    .getByRole('textbox', { name: '密码重置链接', exact: true })
-    .inputValue()
-
-  const resetContext = await browser.newContext()
-  const resetPage = await resetContext.newPage()
-  await resetPage.goto(resetLink)
   await expect(
-    resetPage.getByRole('heading', { level: 1, name: '设置新密码' }),
-  ).toBeVisible()
-  await expect(
-    resetPage.getByRole('link', { name: '返回知笺' }),
-  ).toBeVisible()
-  await expect(
-    resetPage.getByText('managed-19@example.com'),
-  ).toBeVisible()
-  await expect(
-    resetPage.getByText(/重置链接将在 .* 过期/),
-  ).toBeVisible()
-  await resetPage
-    .getByLabel('新密码', { exact: true })
-    .fill('new-collaborator-password')
-  await resetPage
-    .getByLabel('确认新密码')
-    .fill('different-password')
-  await resetPage.getByRole('button', { name: '设置新密码' }).click()
-  await expect(
-    resetPage.getByText('两次输入的密码不一致。', { exact: true }),
-  ).toBeVisible()
-  await resetPage
-    .getByLabel('确认新密码')
-    .fill('new-collaborator-password')
-  await resetPage.getByRole('button', { name: '设置新密码' }).click()
-  await expect(resetPage.getByText('密码已更新，可以重新登录。')).toBeVisible()
-
-  await resetPage.goto(resetLink)
-  await expect(resetPage.getByText('此重置链接已使用。')).toBeVisible()
-
-  const renewedContext = await browser.newContext()
-  const renewedPage = await renewedContext.newPage()
-  await renewedPage.goto('/studio/login')
-  await renewedPage.getByLabel('邮箱').fill('managed-19@example.com')
-  await renewedPage
-    .getByLabel('密码')
-    .fill('new-collaborator-password')
-  const [renewedLogin] = await Promise.all([
-    renewedPage.waitForResponse((response) =>
-      response.url().endsWith('/api/auth/sign-in/email'),
-    ),
-    renewedPage.getByRole('button', { name: '进入写作台' }).click(),
-  ])
-  expect(renewedLogin.status()).toBe(200)
-  await expect(renewedPage).toHaveURL(/\/studio$/)
-
+    ownerPage.getByRole('button', {
+      name: '生成重置链接 协作者十九',
+    }),
+  ).toHaveCount(0)
   expect(
     (
-      await renewedPage.request.post(
+      await ownerPage.request.post(
         '/api/studio/collaboration/collaborators/collaborator-19/password-reset',
         { headers: { origin: appOrigin } },
       )
     ).status(),
-  ).toBe(403)
+  ).toBe(410)
 
-  await renewedContext.close()
-  await resetContext.close()
   await ownerContext.close()
   await collaboratorContext.close()
 })
