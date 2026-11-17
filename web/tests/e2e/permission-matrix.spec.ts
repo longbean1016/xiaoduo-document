@@ -47,6 +47,7 @@ async function login(
   password: string,
 ) {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill(email)
   await page.getByLabel('密码').fill(password)
   await page.getByRole('button', { name: '进入写作台' }).click()

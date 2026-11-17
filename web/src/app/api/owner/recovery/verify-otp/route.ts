@@ -9,6 +9,7 @@ const schema = z.object({
 
 const errorStatus: Record<string, number> = {
   ACCOUNT_SUSPENDED: 403,
+  INVALID_QQ_EMAIL: 400,
   OWNER_NOT_FOUND: 404,
 }
 

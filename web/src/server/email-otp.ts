@@ -9,6 +9,7 @@ import {
   emailOtpRequest,
   user,
 } from '@/db/schema'
+import { isValidQQMailboxEmail } from '@/lib/qq-email'
 import { normalizeEmail } from '@/server/collaboration'
 
 export const OTP_EXPIRES_IN_SECONDS = 600
@@ -33,6 +34,14 @@ export interface OtpEmailSender {
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
+}
+
+function normalizeQQEmail(value: string) {
+  const email = normalizeEmail(value)
+  if (!isValidQQMailboxEmail(email)) {
+    throw new Error('INVALID_QQ_EMAIL')
+  }
+  return email
 }
 
 async function otpRequestCount(input: {
@@ -153,7 +162,7 @@ export async function requestInviteOtp(input: {
   mailer: OtpEmailSender
 }) {
   await pendingInvite(input.token)
-  const email = normalizeEmail(input.email)
+  const email = normalizeQQEmail(input.email)
   await assertEligibleCollaboratorEmail(email)
   await createAndSendOtp({
     email,
@@ -170,7 +179,7 @@ export async function activateInvitationWithOtp(input: {
   otp: string
 }) {
   await pendingInvite(input.token)
-  const email = normalizeEmail(input.email)
+  const email = normalizeQQEmail(input.email)
   const existing = await assertEligibleCollaboratorEmail(email)
   const temporaryUserId = existing ? null : randomUUID()
   if (temporaryUserId) {
@@ -286,7 +295,7 @@ export async function requestCollaboratorLoginOtp(input: {
   ip: string
   mailer: OtpEmailSender
 }) {
-  const email = normalizeEmail(input.email)
+  const email = normalizeQQEmail(input.email)
   await requireActiveCollaborator(email)
   await createAndSendOtp({
     email,
@@ -314,7 +323,7 @@ export async function verifyCollaboratorLoginOtp(input: {
   otp: string
   headers: Headers
 }) {
-  const email = normalizeEmail(input.email)
+  const email = normalizeQQEmail(input.email)
   await requireActiveCollaborator(email)
   return auth.api.signInEmailOTP({
     asResponse: true,
@@ -341,7 +350,7 @@ export async function requestOwnerRecoveryOtp(input: {
   ip: string
   mailer: OtpEmailSender
 }) {
-  const email = normalizeEmail(input.email)
+  const email = normalizeQQEmail(input.email)
   await requireActiveOwner(email)
   await createAndSendOtp({
     email,
@@ -356,8 +365,54 @@ export async function verifyOwnerRecoveryOtp(input: {
   otp: string
   headers: Headers
 }) {
-  const email = normalizeEmail(input.email)
+  const email = normalizeQQEmail(input.email)
   await requireActiveOwner(email)
+  return auth.api.signInEmailOTP({
+    asResponse: true,
+    body: { email, otp: input.otp },
+    headers: input.headers,
+  })
+}
+
+export async function requestStudioLoginOtp(input: {
+  email: string
+  ip: string
+  mailer: OtpEmailSender
+}) {
+  const email = normalizeQQEmail(input.email)
+  const account = await requireActiveStudioAccount(email)
+  await createAndSendOtp({
+    email,
+    ip: input.ip,
+    mailer: input.mailer,
+    purpose:
+      account.role === 'owner' ? 'owner_recovery' : 'collaborator_login',
+  })
+}
+
+async function requireActiveStudioAccount(email: string) {
+  const [existing] = await db
+    .select({ id: user.id, role: user.role, status: user.status })
+    .from(user)
+    .where(eq(user.email, email))
+    .limit(1)
+  if (
+    !existing ||
+    (existing.role !== 'owner' && existing.role !== 'collaborator')
+  ) {
+    throw new Error('STUDIO_ACCOUNT_NOT_FOUND')
+  }
+  if (existing.status !== 'active') throw new Error('ACCOUNT_SUSPENDED')
+  return existing
+}
+
+export async function verifyStudioLoginOtp(input: {
+  email: string
+  otp: string
+  headers: Headers
+}) {
+  const email = normalizeQQEmail(input.email)
+  await requireActiveStudioAccount(email)
   return auth.api.signInEmailOTP({
     asResponse: true,
     body: { email, otp: input.otp },

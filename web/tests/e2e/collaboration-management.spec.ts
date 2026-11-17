@@ -49,6 +49,7 @@ test('owner suspends and restores a collaborator account', async ({
   const ownerContext = await browser.newContext()
   const ownerPage = await ownerContext.newPage()
   await ownerPage.goto('/studio/login')
+  await ownerPage.getByRole('button', { name: '站主密码登录' }).click()
   await ownerPage.getByLabel('邮箱').fill('owner@example.com')
   await ownerPage.getByLabel('密码').fill('owner-test-password')
   await ownerPage.getByRole('button', { name: '进入写作台' }).click()
@@ -99,6 +100,7 @@ test('owner suspends and restores a collaborator account', async ({
 
 test('owner confirms before revoking an article grant', async ({ page }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -150,6 +152,7 @@ test('owner confirms before revoking a pending invitation', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()

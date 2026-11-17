@@ -8,12 +8,15 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type FormEvent } from 'react'
+import { isValidQQMailboxEmail } from '@/lib/qq-email'
 
 const errors: Record<string, string> = {
   ACCOUNT_SUSPENDED: '此账号已停用，请联系站主。',
   EMAIL_NOT_CONFIGURED: '邮件服务暂未配置，请联系站主。',
   INVALID_ACTIVATION: '请填写有效的邮箱、昵称和 6 位验证码。',
   INVALID_OTP: '验证码无效或已过期，请重新获取。',
+  INVALID_QQ_EMAIL:
+    '请输入有效的 QQ 邮箱、Foxmail 邮箱或 QQ VIP 邮箱。',
   INVITE_EXPIRED: '此邀请已过期，请联系站主重新邀请。',
   INVITE_NOT_FOUND: '邀请链接无效。',
   INVITE_NOT_PENDING: '此邀请已经激活或失效，请返回登录。',
@@ -58,8 +61,8 @@ export function InvitationActivationForm({
   async function sendCode() {
     setError('')
     setNotice('')
-    if (!email.trim()) {
-      setError('请先填写邮箱。')
+    if (!isValidQQMailboxEmail(email)) {
+      setError(errors.INVALID_QQ_EMAIL)
       return
     }
 
@@ -94,6 +97,10 @@ export function InvitationActivationForm({
     event.preventDefault()
     setError('')
     setNotice('')
+    if (!isValidQQMailboxEmail(email)) {
+      setError(errors.INVALID_QQ_EMAIL)
+      return
+    }
     if (!/^\d{6}$/.test(otp)) {
       setError('请输入 6 位验证码。')
       return
@@ -150,12 +157,21 @@ export function InvitationActivationForm({
             autoComplete="email"
             maxLength={255}
             value={email}
+            aria-invalid={
+              error === errors.INVALID_QQ_EMAIL || undefined
+            }
+            onBlur={() => {
+              if (email && !isValidQQMailboxEmail(email)) {
+                setError(errors.INVALID_QQ_EMAIL)
+              }
+            }}
             onChange={(event) => {
               setEmail(event.target.value)
               setCodeSent(false)
               setNotice('')
+              if (error === errors.INVALID_QQ_EMAIL) setError('')
             }}
-            placeholder="用于接收验证码"
+            placeholder="name@qq.com"
             required
           />
         </div>

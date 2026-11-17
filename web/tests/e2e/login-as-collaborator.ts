@@ -1,22 +1,35 @@
 import { expect, type Page } from '@playwright/test'
 import { auth } from '../../src/lib/auth'
+import { createTestConnection } from '../test-db'
 
 export async function loginAsCollaborator(page: Page, email: string) {
+  const qqEmail = email.replace(/@example\.com$/i, '@qq.com')
   let sentCode = ''
 
   await page.route(
-    '**/api/collaboration/login/request-otp',
+    '**/api/login/request-otp',
     async (route) => {
       sentCode = await auth.api.createVerificationOTP({
-        body: { email, type: 'sign-in' },
+        body: { email: qqEmail, type: 'sign-in' },
       })
       await route.fulfill({ json: { sent: true } })
     },
   )
 
+  if (qqEmail !== email) {
+    const connection = await createTestConnection()
+    try {
+      await connection.query(
+        `UPDATE auth_user SET email = ? WHERE email IN (?, ?)`,
+        [qqEmail, email, qqEmail],
+      )
+    } finally {
+      await connection.end()
+    }
+  }
+
   await page.goto('/studio/login')
-  await page.getByRole('tab', { name: '协作者验证码登录' }).click()
-  await page.getByLabel('邮箱').fill(email)
+  await page.getByLabel('邮箱地址').fill(qqEmail)
   await page.getByRole('button', { name: '发送验证码' }).click()
   await expect.poll(() => sentCode).toMatch(/^\d{6}$/)
   await page.getByLabel('验证码').fill(sentCode)

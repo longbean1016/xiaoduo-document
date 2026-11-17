@@ -15,7 +15,7 @@ describe('collaboration management', () => {
         `INSERT INTO auth_user (
           id, name, email, email_verified, role, status, created_at, updated_at
         ) VALUES (
-          'collaborator-1', '协作者甲', 'managed@example.com', true,
+          'collaborator-1', '协作者甲', 'managed@qq.com', true,
           'collaborator', 'active', NOW(3), NOW(3)
         )`,
       )
@@ -26,10 +26,10 @@ describe('collaboration management', () => {
 
   it('revokes sessions on suspension and restores access without losing grants', async () => {
     const otp = await auth.api.createVerificationOTP({
-      body: { email: 'managed@example.com', type: 'sign-in' },
+      body: { email: 'managed@qq.com', type: 'sign-in' },
     })
     await auth.api.signInEmailOTP({
-      body: { email: 'managed@example.com', otp },
+      body: { email: 'managed@qq.com', otp },
     })
     expect(
       await db

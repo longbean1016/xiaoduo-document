@@ -11,6 +11,7 @@ const schema = z.object({
 const errorStatus: Record<string, number> = {
   ACCOUNT_SUSPENDED: 403,
   EMAIL_NOT_CONFIGURED: 503,
+  INVALID_QQ_EMAIL: 400,
   OTP_COOLDOWN: 429,
   OTP_EMAIL_DAILY_LIMIT: 429,
   OTP_EMAIL_HOURLY_LIMIT: 429,

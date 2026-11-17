@@ -18,7 +18,7 @@ try {
       id, name, email, email_verified, role, status, created_at, updated_at
     ) VALUES
       ('owner-1', '林默', 'owner@example.com', true, 'owner', 'active', ?, ?),
-      ('collaborator-1', '周行', 'zhou@example.com', true, 'collaborator',
+      ('collaborator-1', '周行', 'zhou@qq.com', true, 'collaborator',
        'active', ?, ?)`,
     [
       dateTime('2026-01-01T00:00:00.000Z'),
@@ -182,7 +182,7 @@ try {
     [
       'visual-password-reset',
       'collaborator-1',
-      'zhou@example.com',
+      'zhou@qq.com',
       createHash('sha256').update('visual-reset-token').digest('hex'),
       dateTime('2099-11-13T13:00:00.000Z'),
       dateTime('2026-11-13T12:00:00.000Z'),

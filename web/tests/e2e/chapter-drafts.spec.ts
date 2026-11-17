@@ -8,6 +8,7 @@ test.beforeEach(async () => {
 
 test('owner creates and autosaves a shared chapter draft', async ({ page }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -46,6 +47,7 @@ test('owner edits a draft through the prototype workspace controls', async ({
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -70,6 +72,7 @@ test('owner edits a draft through the prototype workspace controls', async ({
 test('owner inserts a todo block from the slash menu', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()

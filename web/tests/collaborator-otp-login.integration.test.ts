@@ -24,11 +24,11 @@ describe('collaborator email OTP login', () => {
         `INSERT INTO auth_user (
           id, name, email, email_verified, role, status, created_at, updated_at
         ) VALUES
-          ('owner-1', '站主', 'owner@example.com', true,
+          ('owner-1', '站主', 'owner@qq.com', true,
             'owner', 'active', NOW(3), NOW(3)),
-          ('active-1', '协作者', 'active@example.com', true,
+          ('active-1', '协作者', 'active@qq.com', true,
             'collaborator', 'active', NOW(3), NOW(3)),
-          ('suspended-1', '停用协作者', 'suspended@example.com', true,
+          ('suspended-1', '停用协作者', 'suspended@qq.com', true,
             'collaborator', 'suspended', NOW(3), NOW(3))`,
       )
     } finally {
@@ -40,34 +40,34 @@ describe('collaborator email OTP login', () => {
     const { mailer, sent } = createMailer()
 
     await requestCollaboratorLoginOtp({
-      email: 'ACTIVE@example.com',
+      email: 'ACTIVE@qq.com',
       ip: '127.0.0.1',
       mailer,
     })
     expect(sent).toEqual([
       {
-        email: 'active@example.com',
+        email: 'active@qq.com',
         code: expect.stringMatching(/^\d{6}$/),
       },
     ])
 
     await expect(
       requestCollaboratorLoginOtp({
-        email: 'missing@example.com',
+        email: 'missing@qq.com',
         ip: '127.0.0.1',
         mailer,
       }),
     ).rejects.toThrow('COLLABORATOR_NOT_FOUND')
     await expect(
       requestCollaboratorLoginOtp({
-        email: 'owner@example.com',
+        email: 'owner@qq.com',
         ip: '127.0.0.1',
         mailer,
       }),
     ).rejects.toThrow('COLLABORATOR_NOT_FOUND')
     await expect(
       requestCollaboratorLoginOtp({
-        email: 'suspended@example.com',
+        email: 'suspended@qq.com',
         ip: '127.0.0.1',
         mailer,
       }),

@@ -66,6 +66,7 @@ test('counts public views and exposes details only to the owner', async ({
   const ownerContext = await browser.newContext()
   const ownerPage = await ownerContext.newPage()
   await ownerPage.goto('/studio/login')
+  await ownerPage.getByRole('button', { name: '站主密码登录' }).click()
   await ownerPage.getByLabel('邮箱').fill('owner@example.com')
   await ownerPage.getByLabel('密码').fill('owner-test-password')
   await ownerPage.getByRole('button', { name: '进入写作台' }).click()

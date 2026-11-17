@@ -30,7 +30,7 @@ test('invitee activates with email OTP and enters the studio', async ({
     async (route) => {
       await requestInviteOtp({
         token: invite.token!,
-        email: 'invitee@example.com',
+        email: 'invitee@qq.com',
         ip: '127.0.0.1',
         mailer,
       })
@@ -47,7 +47,7 @@ test('invitee activates with email OTP and enters the studio', async ({
   await expect(page.getByLabel('邮箱')).toHaveValue('')
   await expect(page.getByLabel('设置密码')).toHaveCount(0)
 
-  await page.getByLabel('邮箱').fill('invitee@example.com')
+  await page.getByLabel('邮箱').fill('invitee@qq.com')
   await page.getByLabel('昵称').fill('协作者乙')
   await page.getByRole('button', { name: '发送验证码' }).click()
   await expect(

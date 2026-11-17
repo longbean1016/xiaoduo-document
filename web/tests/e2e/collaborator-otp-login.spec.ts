@@ -14,7 +14,7 @@ test.beforeEach(async () => {
       `INSERT INTO auth_user (
         id, name, email, email_verified, role, status, created_at, updated_at
       ) VALUES (
-        'collaborator-50', '验证码协作者', 'otp@example.com', true,
+        'collaborator-50', '验证码协作者', 'otp@qq.com', true,
         'collaborator', 'active', NOW(3), NOW(3)
       )`,
     )
@@ -47,7 +47,7 @@ test('collaborator signs in with email OTP while password login is rejected', as
     {
       headers: { origin: appOrigin },
       data: {
-        email: 'otp@example.com',
+        email: 'otp@qq.com',
         password: 'old-collaborator-password',
       },
     },
@@ -66,7 +66,7 @@ test('collaborator signs in with email OTP while password login is rejected', as
     ).status(),
   ).toBe(410)
 
-  await loginAsCollaborator(page, 'otp@example.com')
+  await loginAsCollaborator(page, 'otp@qq.com')
   await expect(
     page.getByRole('link', { name: '写作不是归档' }),
   ).toBeVisible()

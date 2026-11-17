@@ -11,24 +11,28 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type FormEvent } from 'react'
+import { isValidQQMailboxEmail } from '@/lib/qq-email'
 
-type LoginMode = 'owner' | 'owner-otp' | 'collaborator'
+type LoginMode = 'otp' | 'password'
+
+const INVALID_EMAIL_MESSAGE =
+  '请输入有效的 QQ 邮箱、Foxmail 邮箱或 QQ VIP 邮箱。'
 
 const otpErrors: Record<string, string> = {
-  ACCOUNT_SUSPENDED: '此协作账号已停用，请联系站主。',
-  COLLABORATOR_NOT_FOUND: '未找到协作账号，请先联系站主获取邀请链接。',
+  ACCOUNT_SUSPENDED: '此账号已停用，请联系站主。',
   EMAIL_NOT_CONFIGURED: '邮件服务暂未配置，请联系站主。',
   INVALID_OTP: '验证码无效或已过期，请重新获取。',
+  INVALID_QQ_EMAIL: INVALID_EMAIL_MESSAGE,
   OTP_COOLDOWN: '请稍后再重新发送验证码。',
   OTP_EMAIL_DAILY_LIMIT: '该邮箱今天发送次数过多，请明天再试。',
   OTP_EMAIL_HOURLY_LIMIT: '该邮箱发送过于频繁，请稍后再试。',
   OTP_IP_HOURLY_LIMIT: '当前网络发送过于频繁，请稍后再试。',
-  OWNER_NOT_FOUND: '未找到站主账号，请检查邮箱。',
+  STUDIO_ACCOUNT_NOT_FOUND: '该 QQ 邮箱尚未开通站主或协作者账号。',
 }
 
 export function LoginForm() {
   const router = useRouter()
-  const [mode, setMode] = useState<LoginMode>('owner')
+  const [mode, setMode] = useState<LoginMode>('otp')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
@@ -36,6 +40,7 @@ export function LoginForm() {
   const [cooldown, setCooldown] = useState(0)
   const [codeSent, setCodeSent] = useState(false)
   const [notice, setNotice] = useState('')
+  const [emailError, setEmailError] = useState('')
   const [error, setError] = useState('')
   const [sendPending, setSendPending] = useState(false)
   const [pending, setPending] = useState(false)
@@ -51,32 +56,34 @@ export function LoginForm() {
   function changeMode(nextMode: LoginMode) {
     setMode(nextMode)
     setError('')
+    setEmailError('')
     setNotice('')
     setOtp('')
+    setCodeSent(false)
+    setCooldown(0)
+  }
+
+  function validateEmail() {
+    if (isValidQQMailboxEmail(email)) {
+      setEmailError('')
+      return true
+    }
+    setEmailError(INVALID_EMAIL_MESSAGE)
+    return false
   }
 
   async function sendCode() {
     setError('')
     setNotice('')
-    if (!email.trim()) {
-      setError('请先填写邮箱。')
-      return
-    }
+    if (!validateEmail()) return
 
     setSendPending(true)
     try {
-      const endpoint =
-        mode === 'owner-otp'
-          ? '/api/owner/recovery/request-otp'
-          : '/api/collaboration/login/request-otp'
-      const response = await fetch(
-        endpoint,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ email }),
-        },
-      )
+      const response = await fetch('/api/login/request-otp', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string }
         setError(
@@ -99,29 +106,32 @@ export function LoginForm() {
     setError('')
     setNotice('')
 
-    if (mode !== 'owner' && !/^\d{6}$/.test(otp)) {
-      setError('请输入 6 位验证码。')
-      return
+    if (mode === 'otp') {
+      if (!validateEmail()) return
+      if (!/^\d{6}$/.test(otp)) {
+        setError('请输入 6 位验证码。')
+        return
+      }
     }
 
     setPending(true)
     try {
       const response = await fetch(
-        mode === 'owner'
-          ? '/api/auth/sign-in/email'
-          : mode === 'owner-otp'
-            ? '/api/owner/recovery/verify-otp'
-            : '/api/collaboration/login/verify-otp',
+        mode === 'otp'
+          ? '/api/login/verify-otp'
+          : '/api/auth/sign-in/email',
         {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(
-            mode === 'owner' ? { email, password } : { email, otp },
+            mode === 'otp'
+              ? { email: email.trim(), otp }
+              : { email, password },
           ),
         },
       )
       if (!response.ok) {
-        if (mode === 'owner') {
+        if (mode === 'password') {
           setError('邮箱或密码不正确，或账号已停用。')
         } else {
           const payload = (await response.json()) as { error?: string }
@@ -136,9 +146,9 @@ export function LoginForm() {
       router.refresh()
     } catch {
       setError(
-        mode === 'owner'
-          ? '登录失败，请稍后重试。'
-          : '验证码校验失败，请稍后重试。',
+        mode === 'otp'
+          ? '验证码校验失败，请稍后重试。'
+          : '登录失败，请稍后重试。',
       )
     } finally {
       setPending(false)
@@ -191,43 +201,9 @@ export function LoginForm() {
           />
 
           <header className="studio-login-card-header">
-            <p>STUDIO ACCESS</p>
+            <p>{mode === 'otp' ? 'EMAIL SIGN IN' : 'OWNER ACCESS'}</p>
             <h1>进入写作台</h1>
           </header>
-
-          <div
-            className="studio-login-role-tabs"
-            role="tablist"
-            aria-label="登录入口"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'owner'}
-              className={mode === 'owner' ? 'is-active' : undefined}
-              onClick={() => changeMode('owner')}
-            >
-              站主密码登录
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'owner-otp'}
-              className={mode === 'owner-otp' ? 'is-active' : undefined}
-              onClick={() => changeMode('owner-otp')}
-            >
-              站主验证码登录
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'collaborator'}
-              className={mode === 'collaborator' ? 'is-active' : undefined}
-              onClick={() => changeMode('collaborator')}
-            >
-              协作者验证码登录
-            </button>
-          </div>
 
           <form className="studio-login-form-v2" onSubmit={onSubmit}>
             <label
@@ -244,49 +220,38 @@ export function LoginForm() {
                   autoComplete="email"
                   required
                   value={email}
+                  aria-invalid={Boolean(emailError)}
+                  aria-describedby={
+                    emailError ? 'studio-login-email-error' : undefined
+                  }
+                  onBlur={() => {
+                    if (mode === 'otp' && email) validateEmail()
+                  }}
                   onChange={(event) => {
                     setEmail(event.target.value)
+                    setEmailError('')
                     setCodeSent(false)
                     setNotice('')
                   }}
-                  placeholder="请输入您的邮箱"
+                  placeholder={
+                    mode === 'otp'
+                      ? 'name@qq.com'
+                      : '请输入站主邮箱'
+                  }
                 />
               </span>
             </label>
-
-            {mode === 'owner' ? (
-              <label
-                className="studio-login-field"
-                htmlFor="studio-login-password"
+            {emailError ? (
+              <p
+                id="studio-login-email-error"
+                className="studio-login-field-error"
+                role="alert"
               >
-                <span>密码</span>
-                <span className="studio-login-input-wrap">
-                  <KeyRound className="studio-login-input-icon" size={19} />
-                  <input
-                    id="studio-login-password"
-                    name="password"
-                    aria-label="密码"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="请输入密码"
-                  />
-                  <button
-                    type="button"
-                    className="studio-login-password-toggle"
-                    aria-label={showPassword ? '隐藏明文' : '显示明文'}
-                    title={showPassword ? '隐藏明文' : '显示明文'}
-                    aria-pressed={showPassword}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => setShowPassword((current) => !current)}
-                  >
-                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-                  </button>
-                </span>
-              </label>
-            ) : (
+                {emailError}
+              </p>
+            ) : null}
+
+            {mode === 'otp' ? (
               <div className="studio-login-field">
                 <label htmlFor="studio-login-otp">验证码</label>
                 <div className="studio-login-code-row">
@@ -323,7 +288,67 @@ export function LoginForm() {
                     {sendPending ? '正在发送…' : sendLabel}
                   </button>
                 </div>
+                <div className="studio-login-fallback-row">
+                  <button
+                    type="button"
+                    className="studio-login-fallback"
+                    onClick={() => changeMode('password')}
+                  >
+                    站主密码登录
+                  </button>
+                </div>
               </div>
+            ) : (
+              <>
+                <label
+                  className="studio-login-field"
+                  htmlFor="studio-login-password"
+                >
+                  <span>密码</span>
+                  <span className="studio-login-input-wrap">
+                    <KeyRound
+                      className="studio-login-input-icon"
+                      size={19}
+                    />
+                    <input
+                      id="studio-login-password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      required
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="请输入站主密码"
+                    />
+                    <button
+                      type="button"
+                      className="studio-login-password-toggle"
+                      aria-label={showPassword ? '隐藏明文' : '显示明文'}
+                      title={showPassword ? '隐藏明文' : '显示明文'}
+                      aria-pressed={showPassword}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() =>
+                        setShowPassword((current) => !current)
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff size={19} />
+                      ) : (
+                        <Eye size={19} />
+                      )}
+                    </button>
+                  </span>
+                </label>
+                <div className="studio-login-fallback-row">
+                  <button
+                    type="button"
+                    className="studio-login-fallback"
+                    onClick={() => changeMode('otp')}
+                  >
+                    返回验证码登录
+                  </button>
+                </div>
+              </>
             )}
 
             {notice ? (

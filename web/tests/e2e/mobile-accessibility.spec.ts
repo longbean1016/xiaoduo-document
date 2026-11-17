@@ -83,6 +83,8 @@ test('mobile reading, search, themes and studio controls remain usable', async (
   ).toHaveCount(0)
 
   await page.goto('/studio/login')
+
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByLabel('密码').press('Enter')

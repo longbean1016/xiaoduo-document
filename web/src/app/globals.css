@@ -7389,6 +7389,34 @@ button.markdown-diff-change-item.is-active {
   opacity: 0.58;
 }
 
+.studio-login-fallback-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.studio-login-fallback {
+  color: #1d6658;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 18px;
+}
+
+.studio-login-fallback:hover {
+  text-decoration: underline;
+}
+
+.studio-login-field-error {
+  margin-top: -12px;
+  color: #b3261e;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 18px;
+}
+
 .studio-login-password-toggle {
   position: absolute;
   top: 50%;

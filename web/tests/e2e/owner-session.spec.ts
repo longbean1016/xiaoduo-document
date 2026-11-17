@@ -6,6 +6,7 @@ test('owner can sign in, update site profile, and revoke the session', async ({
 }) => {
   await page.goto('/studio')
   await expect(page).toHaveURL(/\/studio\/login/)
+  await page.getByRole('button', { name: '站主密码登录' }).click()
 
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')

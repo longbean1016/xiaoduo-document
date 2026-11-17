@@ -15,6 +15,7 @@ const errorStatus: Record<string, number> = {
   INVITE_EXPIRED: 410,
   INVITE_NOT_FOUND: 404,
   INVITE_NOT_PENDING: 409,
+  INVALID_QQ_EMAIL: 400,
   OWNER_ACCOUNT: 403,
 }
 

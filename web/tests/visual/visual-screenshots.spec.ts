@@ -85,13 +85,13 @@ async function prepareProductionPage(
           )
         : await (async () => {
             const otp = await auth.api.createVerificationOTP({
-              body: { email: 'zhou@example.com', type: 'sign-in' },
+              body: { email: 'zhou@qq.com', type: 'sign-in' },
             })
             return page.request.post(
               `${visualOrigins.production}/api/collaboration/login/verify-otp`,
               {
                 headers: { origin: visualOrigins.production },
-                data: { email: 'zhou@example.com', otp },
+                data: { email: 'zhou@qq.com', otp },
               },
             )
           })()

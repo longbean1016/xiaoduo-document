@@ -10,6 +10,7 @@ test('editor renders Mermaid diagrams and can reveal the source', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -50,6 +51,7 @@ test('direct Mermaid source paste creates a rendered diagram', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -90,6 +92,7 @@ test('invalid Mermaid stays recoverable on a dark 375px editor', async ({
 }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -137,6 +140,7 @@ test('Mermaid stays inside the editor across responsive themes', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()

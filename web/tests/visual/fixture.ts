@@ -191,7 +191,7 @@ const notes = [
 const collaborators = [
   {
     id: 'collaborator-1',
-    email: 'zhou@example.com',
+    email: 'zhou@qq.com',
     displayName: '周行',
     noteIds: ['note-keep-thinking'],
     status: 'active',
@@ -213,7 +213,7 @@ const collaborationInvites = [
   {
     id: 'invite-1',
     token: 'visual-invite-token',
-    email: 'invitee@example.com',
+    email: 'invitee@qq.com',
     displayName: '受邀协作者',
     noteIds: ['note-keep-thinking'],
     source: 'direct',

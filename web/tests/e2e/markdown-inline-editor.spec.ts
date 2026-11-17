@@ -18,6 +18,7 @@ test('editor renders pasted inline Markdown as rich text', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -73,6 +74,7 @@ test('editor renders pasted inline Markdown as rich text', async ({
 
 test('editor converts typed Markdown inline syntax', async ({ page }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -95,6 +97,7 @@ test('editor converts typed Markdown inline syntax', async ({ page }) => {
 
 test('plain text with unmatched markers stays literal', async ({ page }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -124,6 +127,7 @@ test('literal bold inserted without keyboard rules is normalized', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -143,6 +147,7 @@ test('contextual Markdown markers reveal and close a bold range', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -218,6 +223,7 @@ test('contextual Markdown markers cover common inline marks', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -248,6 +254,7 @@ test('contextual Markdown markers cover common inline marks', async ({
 
 test('contextual Markdown markers reveal link syntax', async ({ page }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -276,6 +283,7 @@ test('contextual Markdown markers reveal active heading and quote prefixes', asy
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -318,6 +326,7 @@ test('contextual heading and quote markers can be deleted', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -362,6 +371,7 @@ test('inline marker deletion keeps content and exits bold formatting', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -410,6 +420,7 @@ test('ArrowRight and Enter exit an inline mark at the last line', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -443,6 +454,7 @@ test('ArrowRight exits every common inline mark on the same line', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -507,6 +519,7 @@ test('ArrowLeft at the first heading creates a writable paragraph above it', asy
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -540,6 +553,7 @@ test('ArrowUp at the first paragraph creates a writable paragraph above it', asy
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()

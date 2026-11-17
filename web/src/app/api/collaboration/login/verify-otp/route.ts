@@ -10,6 +10,7 @@ const schema = z.object({
 const errorStatus: Record<string, number> = {
   ACCOUNT_SUSPENDED: 403,
   COLLABORATOR_NOT_FOUND: 404,
+  INVALID_QQ_EMAIL: 400,
 }
 
 export async function POST(request: Request) {

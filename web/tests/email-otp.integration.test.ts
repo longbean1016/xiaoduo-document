@@ -99,7 +99,7 @@ describe('email OTP invitation activation', () => {
 
     await requestInviteOtp({
       token: invite.token!,
-      email: 'writer@example.com',
+      email: 'writer@qq.com',
       ip: '127.0.0.1',
       mailer,
     })
@@ -109,7 +109,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       requestInviteOtp({
         token: invite.token!,
-        email: 'writer@example.com',
+        email: 'writer@qq.com',
         ip: '127.0.0.1',
         mailer,
       }),
@@ -121,7 +121,7 @@ describe('email OTP invitation activation', () => {
         `UPDATE email_otp_request
          SET requested_at = DATE_SUB(NOW(3), INTERVAL 2 MINUTE)
          WHERE email = ?`,
-        ['writer@example.com'],
+        ['writer@qq.com'],
       )
     } finally {
       await userConnection.end()
@@ -129,7 +129,7 @@ describe('email OTP invitation activation', () => {
 
     await requestInviteOtp({
       token: invite.token!,
-      email: 'writer@example.com',
+      email: 'writer@qq.com',
       ip: '127.0.0.1',
       mailer,
     })
@@ -141,7 +141,7 @@ describe('email OTP invitation activation', () => {
         `INSERT INTO auth_user (
           id, name, email, email_verified, role, status, created_at, updated_at
         ) VALUES (
-          'writer-1', '写作者', 'writer@example.com', true,
+          'writer-1', '写作者', 'writer@qq.com', true,
           'collaborator', 'active', NOW(3), NOW(3)
         )`,
       )
@@ -151,7 +151,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       auth.api.checkVerificationOTP({
         body: {
-          email: 'writer@example.com',
+          email: 'writer@qq.com',
           otp: sent[0].code,
           type: 'sign-in',
         },
@@ -160,7 +160,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       auth.api.checkVerificationOTP({
         body: {
-          email: 'writer@example.com',
+          email: 'writer@qq.com',
           otp: sent[1].code,
           type: 'sign-in',
         },
@@ -174,7 +174,7 @@ describe('email OTP invitation activation', () => {
 
     await requestInviteOtp({
       token: invite.token!,
-      email: 'writer@example.com',
+      email: 'writer@qq.com',
       ip: '127.0.0.1',
       mailer,
     })
@@ -183,7 +183,7 @@ describe('email OTP invitation activation', () => {
       await expect(
         activateInvitationWithOtp({
           token: invite.token!,
-          email: 'writer@example.com',
+          email: 'writer@qq.com',
           name: '写作者',
           otp: '000000',
         }),
@@ -193,7 +193,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       activateInvitationWithOtp({
         token: invite.token!,
-        email: 'writer@example.com',
+        email: 'writer@qq.com',
         name: '写作者',
         otp: sent[0].code,
       }),
@@ -206,7 +206,7 @@ describe('email OTP invitation activation', () => {
 
     await requestInviteOtp({
       token: invite.token!,
-      email: 'writer@example.com',
+      email: 'writer@qq.com',
       ip: '127.0.0.1',
       mailer,
     })
@@ -219,7 +219,7 @@ describe('email OTP invitation activation', () => {
         ) AS lifetime_seconds
         FROM auth_verification
         WHERE identifier = ?`,
-        ['sign-in-otp-writer@example.com'],
+        ['sign-in-otp-writer@qq.com'],
       )
       expect(rows[0].lifetime_seconds).toBe(600)
     } finally {
@@ -243,7 +243,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       requestInviteOtp({
         token: invite.token!,
-        email: 'writer@example.com',
+        email: 'writer@qq.com',
         ip: '127.0.0.1',
         mailer,
       }),
@@ -257,7 +257,7 @@ describe('email OTP invitation activation', () => {
 
     await insertOtpRequests(
       Array.from({ length: 5 }, (_, index) => ({
-        email: 'hourly@example.com',
+        email: 'hourly@qq.com',
         ip: `10.0.0.${index + 1}`,
         secondsAgo: 120 + index,
       })),
@@ -265,7 +265,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       requestInviteOtp({
         token: invite.token!,
-        email: 'hourly@example.com',
+        email: 'hourly@qq.com',
         ip: '127.0.0.1',
         mailer,
       }),
@@ -273,7 +273,7 @@ describe('email OTP invitation activation', () => {
 
     await insertOtpRequests(
       Array.from({ length: 10 }, (_, index) => ({
-        email: 'daily@example.com',
+        email: 'daily@qq.com',
         ip: `10.0.1.${index + 1}`,
         secondsAgo: 7_200 + index * 1_800,
       })),
@@ -281,7 +281,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       requestInviteOtp({
         token: invite.token!,
-        email: 'daily@example.com',
+        email: 'daily@qq.com',
         ip: '127.0.0.1',
         mailer,
       }),
@@ -289,7 +289,7 @@ describe('email OTP invitation activation', () => {
 
     await insertOtpRequests(
       Array.from({ length: 10 }, (_, index) => ({
-        email: `ip-${index}@example.com`,
+        email: `ip-${index}@qq.com`,
         ip: '192.0.2.8',
         secondsAgo: 120 + index,
       })),
@@ -297,7 +297,7 @@ describe('email OTP invitation activation', () => {
     await expect(
       requestInviteOtp({
         token: invite.token!,
-        email: 'new-writer@example.com',
+        email: 'new-writer@qq.com',
         ip: '192.0.2.8',
         mailer,
       }),
@@ -311,19 +311,19 @@ describe('email OTP invitation activation', () => {
 
     await requestInviteOtp({
       token: invite.token!,
-      email: 'writer@example.com',
+      email: 'writer@qq.com',
       ip: '127.0.0.1',
       mailer,
     })
     const activated = await activateInvitationWithOtp({
       token: invite.token!,
-      email: 'writer@example.com',
+      email: 'writer@qq.com',
       name: '写作者',
       otp: sent[0].code,
     })
 
     expect(activated).toMatchObject({
-      email: 'writer@example.com',
+      email: 'writer@qq.com',
       name: '写作者',
     })
     const connection = await createTestConnection()
@@ -331,10 +331,10 @@ describe('email OTP invitation activation', () => {
       const [users] = await connection.query<UserRow[]>(
         `SELECT id, email, name, role, status
          FROM auth_user WHERE email = ?`,
-        ['writer@example.com'],
+        ['writer@qq.com'],
       )
       expect(users[0]).toMatchObject({
-        email: 'writer@example.com',
+        email: 'writer@qq.com',
         name: '写作者',
         role: 'collaborator',
         status: 'active',
@@ -350,7 +350,7 @@ describe('email OTP invitation activation', () => {
         [invite.id],
       )
       expect(invites[0]).toMatchObject({
-        email: 'writer@example.com',
+        email: 'writer@qq.com',
         claimed_user_id: users[0].id,
         status: 'activated',
       })
