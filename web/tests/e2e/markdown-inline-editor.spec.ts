@@ -416,7 +416,7 @@ test('inline marker deletion keeps content and exits bold formatting', async ({
   await expect(body).toContainText('普通文本')
 })
 
-test('ArrowRight and Enter exit an inline mark at the last line', async ({
+test('ArrowRight enters then exits an inline mark at the last line', async ({
   page,
 }) => {
   await page.goto('/studio/login')
@@ -439,18 +439,49 @@ test('ArrowRight and Enter exit an inline mark at the last line', async ({
   const paragraphsBefore = await body.locator(':scope > p').count()
   await page.keyboard.press('ArrowRight')
   await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+  await page.keyboard.type('续写')
+  await expect(strong).toHaveText('最后一行粗体续写')
+  await page.keyboard.press('ArrowRight')
   await page.keyboard.press('Enter')
   await expect(body.locator(':scope > p')).toHaveCount(
     paragraphsBefore + 1,
   )
   await page.keyboard.type('下一行普通文本')
 
-  await expect(strong).toHaveText('最后一行粗体')
+  await expect(strong).toHaveText('最后一行粗体续写')
   await expect(body).toContainText('下一行普通文本')
   await expect(strong).not.toContainText('下一行普通文本')
 })
 
-test('ArrowRight exits every common inline mark on the same line', async ({
+test('ArrowRight enters a marked range before exiting its trailing marker', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await body.fill('')
+  await body.click()
+  await page.keyboard.type('**1**')
+  const strong = body.locator('strong')
+  await expect(strong).toHaveText('1')
+
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.type('2')
+  await expect(strong).toHaveText('12')
+
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.type('普通')
+  await expect(strong).toHaveText('12')
+  await expect(body).toContainText('12普通')
+})
+
+test('ArrowRight enters then exits every common inline mark on the same line', async ({
   page,
 }) => {
   await page.goto('/studio/login')
@@ -488,10 +519,13 @@ test('ArrowRight exits every common inline mark on the same line', async ({
     const paragraphsBefore = await body.locator(':scope > p').count()
     await page.keyboard.press('ArrowRight')
     await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+    await page.keyboard.type('续写')
+    await expect(marked).toHaveText(`${item.content}续写`)
+    await page.keyboard.press('ArrowRight')
     await page.keyboard.type('同排普通文本')
 
-    await expect(marked).toHaveText(item.content)
-    await expect(body).toContainText(`${item.content}同排普通文本`)
+    await expect(marked).toHaveText(`${item.content}续写`)
+    await expect(body).toContainText(`${item.content}续写同排普通文本`)
   }
 
   await body.fill('')
@@ -505,14 +539,22 @@ test('ArrowRight exits every common inline mark on the same line', async ({
 
   const link = body.getByRole('link', { name: '链接内容' })
   const paragraphsBefore = await body.locator(':scope > p').count()
-  await link.click()
-  await page.keyboard.press('Control+End')
+  const linkBox = await link.boundingBox()
+  if (!linkBox) throw new Error('找不到链接文本位置')
+  await page.mouse.click(
+    linkBox.x + linkBox.width - 1,
+    linkBox.y + linkBox.height / 2,
+  )
+  await page.keyboard.press('End')
   await page.keyboard.press('ArrowRight')
   await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+  await page.keyboard.type('续写')
+  await expect(link).toHaveText('链接内容续写')
+  await page.keyboard.press('ArrowRight')
   await page.keyboard.type('同排普通文本')
 
-  await expect(link).toHaveText('链接内容')
-  await expect(body).toHaveText(/链接内容\s*同排普通文本/)
+  await expect(link).toHaveText('链接内容续写')
+  await expect(body).toHaveText(/链接内容续写\s*同排普通文本/)
 })
 
 test('ArrowLeft at the first heading creates a writable paragraph above it', async ({

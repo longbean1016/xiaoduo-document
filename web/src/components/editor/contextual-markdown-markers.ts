@@ -15,7 +15,13 @@ type MarkRange = {
   to: number
 }
 
-const markersPluginKey = new PluginKey<DecorationSet>(
+type MarkerPluginState = {
+  // ArrowRight enters a mark at its trailing syntax; a second press exits it.
+  continuationKeys: string[]
+  decorations: DecorationSet
+}
+
+const markersPluginKey = new PluginKey<MarkerPluginState>(
   'contextualMarkdownMarkers',
 )
 
@@ -132,7 +138,7 @@ function buildDecorations(state: EditorState) {
         markerWidget(range.close, 1, range.markName),
         {
           key: `close-${range.key}-${range.to}`,
-          side: -1,
+          side: 1,
         },
       ),
     ]
@@ -148,6 +154,7 @@ function handleMarkerKeyDown(
   state: EditorState,
   dispatch: (transaction: ReturnType<EditorState['tr']['setMeta']>) => void,
   key: string,
+  continuationKeys: readonly string[],
 ) {
   if (!state.selection.empty) return false
   const { $from } = state.selection
@@ -171,14 +178,44 @@ function handleMarkerKeyDown(
 
   const ranges = collectMarkRanges(state)
   if (key === 'ArrowRight') {
-    const endingMark = ranges.find(
+    const endingMarks = ranges.filter(
       (range) => range.to === state.selection.from,
     )
     if (
-      endingMark &&
+      endingMarks.length &&
       $from.parentOffset === $from.parent.content.size
     ) {
-      dispatch(state.tr.setStoredMarks([]))
+      const isContinuingMark = endingMarks.some(({ key: markKey }) =>
+        continuationKeys.includes(markKey),
+      )
+      const storedMarks = state.storedMarks ?? []
+      dispatch(
+        state.tr
+          .setStoredMarks(
+            isContinuingMark
+              ? storedMarks.filter(
+                  (storedMark) =>
+                    !endingMarks.some(({ mark }) => storedMark.eq(mark)),
+                )
+              : [
+                  ...storedMarks,
+                  ...endingMarks
+                    .map(({ mark }) => mark)
+                    .filter(
+                      (mark) =>
+                        !storedMarks.some((storedMark) =>
+                          storedMark.eq(mark),
+                        ),
+                    ),
+                ],
+          )
+          .setMeta(
+            markersPluginKey,
+            isContinuingMark
+              ? []
+              : endingMarks.map(({ key: markKey }) => markKey),
+          ),
+      )
       return true
     }
     return false
@@ -211,21 +248,37 @@ function handleMarkerKeyDown(
 
 export const ContextualMarkdownMarkers = Extension.create({
   name: 'contextualMarkdownMarkers',
+  priority: 1000,
 
   addProseMirrorPlugins() {
     return [
-      new Plugin<DecorationSet>({
+      new Plugin<MarkerPluginState>({
         key: markersPluginKey,
         state: {
-          init: (_config, state) => buildDecorations(state),
-          apply: (transaction, previous, _oldState, newState) =>
-            transaction.docChanged || transaction.selectionSet
-              ? buildDecorations(newState)
-              : previous,
+          init: (_config, state) => ({
+            continuationKeys: [],
+            decorations: buildDecorations(state),
+          }),
+          apply: (transaction, previous, _oldState, newState) => {
+            const continuation = transaction.getMeta(markersPluginKey) as
+              | string[]
+              | undefined
+            return {
+              continuationKeys:
+                continuation ??
+                (transaction.selectionSet && !transaction.docChanged
+                  ? []
+                  : previous.continuationKeys),
+              decorations:
+                transaction.docChanged || transaction.selectionSet
+                  ? buildDecorations(newState)
+                  : previous.decorations,
+            }
+          },
         },
         props: {
           decorations(state) {
-            return markersPluginKey.getState(state)
+            return markersPluginKey.getState(state)?.decorations
           },
           handleKeyDown(view, event) {
             if (
@@ -240,9 +293,40 @@ export const ContextualMarkdownMarkers = Extension.create({
               view.state,
               view.dispatch,
               event.key,
+              markersPluginKey.getState(view.state)?.continuationKeys ?? [],
             )
             if (handled) event.preventDefault()
             return handled
+          },
+          handleTextInput(view, from, to, text) {
+            const continuationKeys =
+              markersPluginKey.getState(view.state)?.continuationKeys ?? []
+            if (!continuationKeys.length) return false
+
+            const { $from } = view.state.selection
+            const continuingMarks = collectMarkRanges(view.state).filter(
+              (range) =>
+                range.to === from &&
+                continuationKeys.includes(range.key),
+            )
+            if (
+              !continuingMarks.length ||
+              $from.parentOffset !== $from.parent.content.size
+            ) {
+              return false
+            }
+
+            const marks = continuingMarks.reduce(
+              (current, { mark }) => mark.addToSet(current),
+              view.state.storedMarks ?? $from.marks(),
+            )
+            const transaction = view.state.tr.insertText(text, from, to)
+            for (const mark of marks) {
+              transaction.addMark(from, from + text.length, mark)
+            }
+            transaction.setStoredMarks(marks)
+            view.dispatch(transaction)
+            return true
           },
         },
       }),
