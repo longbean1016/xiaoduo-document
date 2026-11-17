@@ -116,4 +116,5 @@ test('brand portrait loads enough pixels for a crisp circle', async ({
   expect(metrics.complete).toBe(true)
   expect(metrics.naturalWidth).toBeGreaterThanOrEqual(96)
   expect(metrics.transform).toBe('none')
+  expect(await image.getAttribute('src')).toContain('q=100')
 })
