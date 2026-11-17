@@ -476,6 +476,7 @@ test('ArrowRight enters a marked range before exiting its trailing marker', asyn
   await expect(strong).toHaveText('12')
 
   await page.keyboard.press('ArrowRight')
+  await expect(body.locator('.markdown-context-marker')).toHaveCount(0)
   await page.keyboard.type('普通')
   await expect(strong).toHaveText('12')
   await expect(body).toContainText('12普通')
@@ -557,7 +558,7 @@ test('ArrowRight enters then exits every common inline mark on the same line', a
   await expect(body).toHaveText(/链接内容续写\s*同排普通文本/)
 })
 
-test('ArrowLeft at the first heading creates a writable paragraph above it', async ({
+test('ArrowLeft reaches the first heading prefix without creating a paragraph', async ({
   page,
 }) => {
   await page.goto('/studio/login')
@@ -569,15 +570,20 @@ test('ArrowLeft at the first heading creates a writable paragraph above it', asy
 
   await page.goto('/studio/notes/article-1')
   const body = page.getByRole('textbox', { name: '章节正文' })
-  await body.fill('')
-  await body.click()
-  await page.getByRole('button', { name: '二级标题' }).click()
-  await page.keyboard.type('第二节')
+  await body.fill('## 第二节')
 
   const heading = body.getByRole('heading', { name: '第二节' })
+  const paragraphsBefore = await body.locator(':scope > p').count()
   await heading.click()
   await page.keyboard.press('Home')
   await page.keyboard.press('ArrowLeft')
+  await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+  await expect(heading).toBeVisible()
+
+  await page.keyboard.press('Enter')
+  await expect(body.locator(':scope > p')).toHaveCount(
+    paragraphsBefore + 1,
+  )
   await page.keyboard.type('标题前面的普通内容')
 
   await expect(body).toContainText('标题前面的普通内容')
@@ -591,7 +597,7 @@ test('ArrowLeft at the first heading creates a writable paragraph above it', asy
     .toBe('P')
 })
 
-test('ArrowUp at the first paragraph creates a writable paragraph above it', async ({
+test('ArrowUp does not create a paragraph at the first block', async ({
   page,
 }) => {
   await page.goto('/studio/login')
@@ -615,16 +621,9 @@ test('ArrowUp at the first paragraph creates a writable paragraph above it', asy
   await expect(firstParagraph).toHaveText('原来的第一段')
   await firstParagraph.click()
   await page.keyboard.press('Home')
+  const paragraphsBefore = await body.locator(':scope > p').count()
   await page.keyboard.press('ArrowUp')
-  await page.keyboard.type('段前普通内容')
-
-  await expect(body).toContainText('段前普通内容')
-  await expect
-    .poll(() =>
-      body.locator(':scope > p').first().evaluate(
-        (element) => element.textContent ?? '',
-      ),
-    )
-    .toContain('段前普通内容')
+  await expect(body.locator(':scope > p')).toHaveCount(paragraphsBefore)
+  await expect(firstParagraph).toHaveText('原来的第一段')
   await expect(body).toContainText('原来的第一段')
 })

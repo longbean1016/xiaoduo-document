@@ -19,6 +19,7 @@ type MarkerPluginState = {
   // ArrowRight enters a mark at its trailing syntax; a second press exits it.
   continuationKeys: string[]
   decorations: DecorationSet
+  suppressedKeys: string[]
 }
 
 const markersPluginKey = new PluginKey<MarkerPluginState>(
@@ -94,7 +95,10 @@ function collectMarkRanges(state: EditorState) {
   return ranges
 }
 
-function buildDecorations(state: EditorState) {
+function buildDecorations(
+  state: EditorState,
+  suppressedKeys: readonly string[] = [],
+) {
   if (!state.selection.empty) return DecorationSet.empty
 
   const { $from } = state.selection
@@ -115,7 +119,7 @@ function buildDecorations(state: EditorState) {
         markerWidget(blockPrefix, -1, 'block'),
         {
           key: `block-${$from.pos}-${blockPrefix}`,
-          side: -1,
+          side: 1,
         },
       ),
     )
@@ -123,6 +127,7 @@ function buildDecorations(state: EditorState) {
 
   const cursor = state.selection.from
   const decorations = ranges.flatMap((range) => {
+    if (suppressedKeys.includes(range.key)) return []
     if (cursor < range.from || cursor > range.to) return []
     return [
       Decoration.widget(
@@ -155,6 +160,7 @@ function handleMarkerKeyDown(
   dispatch: (transaction: ReturnType<EditorState['tr']['setMeta']>) => void,
   key: string,
   continuationKeys: readonly string[],
+  suppressedKeys: readonly string[],
 ) {
   if (!state.selection.empty) return false
   const { $from } = state.selection
@@ -185,6 +191,13 @@ function handleMarkerKeyDown(
       endingMarks.length &&
       $from.parentOffset === $from.parent.content.size
     ) {
+      if (
+        endingMarks.some(({ key: markKey }) =>
+          suppressedKeys.includes(markKey),
+        )
+      ) {
+        return false
+      }
       const isContinuingMark = endingMarks.some(({ key: markKey }) =>
         continuationKeys.includes(markKey),
       )
@@ -211,9 +224,14 @@ function handleMarkerKeyDown(
           )
           .setMeta(
             markersPluginKey,
-            isContinuingMark
-              ? []
-              : endingMarks.map(({ key: markKey }) => markKey),
+            {
+              continuationKeys: isContinuingMark
+                ? []
+                : endingMarks.map(({ key: markKey }) => markKey),
+              suppressedKeys: isContinuingMark
+                ? endingMarks.map(({ key: markKey }) => markKey)
+                : [],
+            },
           ),
       )
       return true
@@ -258,21 +276,35 @@ export const ContextualMarkdownMarkers = Extension.create({
           init: (_config, state) => ({
             continuationKeys: [],
             decorations: buildDecorations(state),
+            suppressedKeys: [],
           }),
           apply: (transaction, previous, _oldState, newState) => {
-            const continuation = transaction.getMeta(markersPluginKey) as
-              | string[]
+            const markerState = transaction.getMeta(markersPluginKey) as
+              | {
+                  continuationKeys: string[]
+                  suppressedKeys: string[]
+                }
               | undefined
+            const continuationKeys =
+              markerState?.continuationKeys ??
+              (transaction.selectionSet && !transaction.docChanged
+                ? []
+                : previous.continuationKeys)
+            const suppressedKeys =
+              markerState?.suppressedKeys ??
+              (transaction.docChanged ||
+              (transaction.selectionSet && !transaction.docChanged)
+                ? []
+                : previous.suppressedKeys)
             return {
-              continuationKeys:
-                continuation ??
-                (transaction.selectionSet && !transaction.docChanged
-                  ? []
-                  : previous.continuationKeys),
+              continuationKeys,
               decorations:
-                transaction.docChanged || transaction.selectionSet
-                  ? buildDecorations(newState)
+                markerState ||
+                transaction.docChanged ||
+                transaction.selectionSet
+                  ? buildDecorations(newState, suppressedKeys)
                   : previous.decorations,
+              suppressedKeys,
             }
           },
         },
@@ -294,6 +326,7 @@ export const ContextualMarkdownMarkers = Extension.create({
               view.dispatch,
               event.key,
               markersPluginKey.getState(view.state)?.continuationKeys ?? [],
+              markersPluginKey.getState(view.state)?.suppressedKeys ?? [],
             )
             if (handled) event.preventDefault()
             return handled

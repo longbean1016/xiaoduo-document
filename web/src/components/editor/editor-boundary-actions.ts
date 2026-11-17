@@ -31,28 +31,6 @@ export function handleEditorBoundaryKeyDown(
   event: KeyboardEvent,
 ) {
   if (
-    (event.key === 'ArrowLeft' || event.key === 'ArrowUp') &&
-    view.state.selection.empty
-  ) {
-    const { $from } = view.state.selection
-    if (
-      $from.parentOffset === 0 &&
-      ($from.pos === 1 || $from.before($from.depth) === 0)
-    ) {
-      const paragraph = view.state.schema.nodes.paragraph?.createAndFill()
-      if (paragraph) {
-        const transaction = view.state.tr.insert(0, paragraph)
-        transaction.setSelection(
-          TextSelection.near(transaction.doc.resolve(1)),
-        )
-        transaction.setStoredMarks([])
-        view.dispatch(transaction)
-        event.preventDefault()
-        return true
-      }
-    }
-  }
-  if (
     (event.key !== 'Enter' && event.key !== 'ArrowUp') ||
     !isFirstTableCellStart(view.state)
   ) {
