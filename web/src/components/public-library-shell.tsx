@@ -121,13 +121,11 @@ export function PublicLibraryShell({
         <Link
           href="/"
           className="library-brand"
-          aria-label="知笺首页"
+          aria-label="小多笔记库首页"
           onClick={() => setSidebarOpen(false)}
         >
           <BrandMark />
         </Link>
-        <span className="library-header-divider" />
-        <span className="library-header-title">笔记库</span>
         <div className="ml-auto flex items-center gap-1">
           <button
             ref={searchButtonRef}
