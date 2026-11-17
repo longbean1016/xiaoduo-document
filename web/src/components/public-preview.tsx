@@ -25,7 +25,7 @@ export function PublicPreview({
   return (
     <main className="landing-page">
       <header className="landing-header">
-        <Link href="/" aria-label="知笺首页">
+        <Link href="/" aria-label="小多笔记首页">
           <BrandMark />
         </Link>
         <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export function PublicPreview({
           <div className="landing-preview-top">
             <span className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-[var(--rust)]" />
-              知笺 · 笔记库
+              小多笔记
             </span>
             <span>预览</span>
           </div>
@@ -102,7 +102,7 @@ export function PublicPreview({
             </aside>
             <div className="landing-preview-content">
               <p className="landing-preview-breadcrumb">
-                {previewCategory?.title ?? '知笺'}
+                {previewCategory?.title ?? '小多笔记'}
                 <ChevronRight size={15} />
                 第一章
               </p>
@@ -124,7 +124,7 @@ export function PublicPreview({
       </section>
 
       <footer className="landing-footer">
-        <span>知笺 · {authorName}</span>
+        <span>小多笔记 · {authorName}</span>
         <span>从一页笔记开始，慢慢形成自己的目录。</span>
       </footer>
     </main>

@@ -45,7 +45,7 @@ export default async function OpenGraphImage({
           <div
             style={{ display: 'flex', fontSize: 26, color: '#9b4c2f' }}
           >
-            知笺 · {chapter.categoryTitle}
+            小多笔记 · {chapter.categoryTitle}
           </div>
           <div
             style={{

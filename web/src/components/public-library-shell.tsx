@@ -121,7 +121,7 @@ export function PublicLibraryShell({
         <Link
           href="/"
           className="library-brand"
-          aria-label="小多笔记库首页"
+          aria-label="小多笔记首页"
           onClick={() => setSidebarOpen(false)}
         >
           <BrandMark />

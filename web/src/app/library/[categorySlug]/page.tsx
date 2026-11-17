@@ -19,7 +19,7 @@ export async function generateMetadata({
   )
   return category
     ? {
-        title: `${category.title} · 知笺`,
+        title: `${category.title} · 小多笔记`,
         description: `阅读${category.title}分类下的公开章节。`,
       }
     : {}

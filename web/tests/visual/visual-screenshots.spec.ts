@@ -202,7 +202,7 @@ async function applyVisualInteraction(
   if (interaction === 'open-public-search') {
     await page.getByRole('button', { name: '搜索' }).first().click()
     await expect(
-      page.getByRole('dialog', { name: '搜索知笺' }),
+      page.getByRole('dialog', { name: '搜索小多笔记' }),
     ).toBeVisible()
     await page
       .getByPlaceholder('搜索分类或章节')
@@ -278,7 +278,7 @@ test('shared components support dialog focus, tooltip, and keyboard select', asy
 test('public search opens by shortcut and returns focus', async ({ page }) => {
   await page.goto(`${visualOrigins.production}/visual-fixtures/public-shell`)
   await page.keyboard.press('ControlOrMeta+KeyK')
-  const dialog = page.getByRole('dialog', { name: '搜索知笺' })
+  const dialog = page.getByRole('dialog', { name: '搜索小多笔记' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByLabel('搜索公开章节')).toBeFocused()
   await page.keyboard.press('Escape')

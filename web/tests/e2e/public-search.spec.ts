@@ -5,7 +5,7 @@ test('reader searches only public chapters', async ({ page }) => {
   await page.goto('/library')
   await page.getByRole('button', { name: '搜索' }).click()
   const search = page
-    .getByRole('dialog', { name: '搜索知笺' })
+    .getByRole('dialog', { name: '搜索小多笔记' })
     .getByLabel('搜索公开章节')
   await search.fill('持续修订')
   await search.press('Enter')
@@ -22,7 +22,7 @@ test('reader searches only public chapters', async ({ page }) => {
 test('focused search input has no visible outline edge', async ({ page }) => {
   await page.goto('/library')
   await page.getByRole('button', { name: '搜索' }).click()
-  const dialog = page.getByRole('dialog', { name: '搜索知笺' })
+  const dialog = page.getByRole('dialog', { name: '搜索小多笔记' })
   const search = dialog.getByLabel('搜索公开章节')
   await search.click()
   await expect(search).toBeFocused()

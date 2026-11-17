@@ -50,7 +50,7 @@ export async function generateMetadata({
     openGraph.image ??
     `/library/${chapter.categorySlug}/${chapter.path}/opengraph-image`
   return {
-    title: openGraph.title,
+    title: `${openGraph.title} · 小多笔记`,
     description: openGraph.description,
     authors: [{ name: openGraph.author }],
     alternates: { canonical: openGraph.url },
@@ -59,7 +59,7 @@ export async function generateMetadata({
       title: openGraph.title,
       description: openGraph.description,
       url: openGraph.url,
-      siteName: '知笺',
+      siteName: '小多笔记',
       publishedTime: chapter.publishedAt,
       authors: [openGraph.author, ...openGraph.contributors],
       images: [{ url: image, alt: openGraph.title }],

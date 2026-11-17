@@ -104,7 +104,7 @@ export function PublicSearchDialog({
           }}
         >
           <DialogPrimitive.Title className="sr-only">
-            搜索知笺
+            搜索小多笔记
           </DialogPrimitive.Title>
           <form
             role="search"

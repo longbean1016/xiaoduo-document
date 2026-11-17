@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 export function BrandMark({
-  label = '小多',
+  label = '小多笔记',
   compact = false,
   className,
 }: {

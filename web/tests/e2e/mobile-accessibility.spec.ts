@@ -67,11 +67,11 @@ test('mobile reading, search, themes and studio controls remain usable', async (
 
   await page.getByRole('button', { name: '搜索' }).click()
   await page
-    .getByRole('dialog', { name: '搜索知笺' })
+    .getByRole('dialog', { name: '搜索小多笔记' })
     .getByLabel('搜索公开章节')
     .fill('写作')
   await page
-    .getByRole('dialog', { name: '搜索知笺' })
+    .getByRole('dialog', { name: '搜索小多笔记' })
     .getByLabel('搜索公开章节')
     .press('Enter')
   await expect(page).toHaveURL(/\/search\?q=/)

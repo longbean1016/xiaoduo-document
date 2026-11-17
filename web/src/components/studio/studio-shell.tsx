@@ -118,7 +118,7 @@ export function StudioShell({
       ) : null}
       {!isEditor ? (
         <div className="studio-mobile-bar">
-          <BrandMark compact label="写作台" />
+          <BrandMark compact label="小多写作台" />
           <nav aria-label="写作台导航">
             <StudioMobileNav
               to="/studio"
@@ -181,7 +181,7 @@ export function StudioShell({
 
       <aside className="studio-sidebar">
         <div className="px-5 pb-5 pt-5">
-          <BrandMark label="写作台" />
+          <BrandMark label="小多写作台" />
         </div>
 
         {isOwner ? (
