@@ -263,8 +263,13 @@ export const collaborationInvite = mysqlTable(
   {
     id: varchar('id', { length: 36 }).primaryKey(),
     tokenHash: varchar('token_hash', { length: 64 }).notNull(),
-    email: varchar('email', { length: 255 }).notNull(),
+    email: varchar('email', { length: 255 }),
     displayName: varchar('display_name', { length: 120 }),
+    claimedUserId: varchar('claimed_user_id', { length: 36 }).references(
+      () => user.id,
+      { onDelete: 'set null' },
+    ),
+    claimedAt: datetime('claimed_at', { mode: 'date', fsp: 3 }),
     source: mysqlEnum('source', ['application', 'direct']).notNull(),
     applicationId: varchar('application_id', { length: 36 }).references(
       () => collaborationApplication.id,
@@ -286,6 +291,33 @@ export const collaborationInvite = mysqlTable(
   (table) => [
     uniqueIndex('collaboration_invite_token_unique').on(table.tokenHash),
     index('collaboration_invite_email_idx').on(table.email),
+  ],
+)
+
+export const emailOtpRequest = mysqlTable(
+  'email_otp_request',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    email: varchar('email', { length: 255 }).notNull(),
+    purpose: mysqlEnum('purpose', [
+      'invite_activation',
+      'collaborator_login',
+      'owner_recovery',
+    ]).notNull(),
+    ipAddress: varchar('ip_address', { length: 64 }).notNull(),
+    requestedAt: datetime('requested_at', { mode: 'date', fsp: 3 })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP(3)`),
+  },
+  (table) => [
+    index('email_otp_request_email_time_idx').on(
+      table.email,
+      table.requestedAt,
+    ),
+    index('email_otp_request_ip_time_idx').on(
+      table.ipAddress,
+      table.requestedAt,
+    ),
   ],
 )
 

@@ -15,7 +15,14 @@ type MarkRange = {
   to: number
 }
 
-const markersPluginKey = new PluginKey<DecorationSet>(
+type MarkerPluginState = {
+  // ArrowRight enters a mark at its trailing syntax; a second press exits it.
+  continuationKeys: string[]
+  decorations: DecorationSet
+  suppressedKeys: string[]
+}
+
+const markersPluginKey = new PluginKey<MarkerPluginState>(
   'contextualMarkdownMarkers',
 )
 
@@ -50,7 +57,7 @@ function markerWidget(
     marker.dataset.side = side < 0 ? 'open' : 'close'
     marker.setAttribute('aria-hidden', 'true')
     marker.contentEditable = 'false'
-    marker.textContent = text
+    marker.dataset.markerText = text
     return marker
   }
 }
@@ -88,7 +95,10 @@ function collectMarkRanges(state: EditorState) {
   return ranges
 }
 
-function buildDecorations(state: EditorState) {
+function buildDecorations(
+  state: EditorState,
+  suppressedKeys: readonly string[] = [],
+) {
   if (!state.selection.empty) return DecorationSet.empty
 
   const { $from } = state.selection
@@ -117,6 +127,7 @@ function buildDecorations(state: EditorState) {
 
   const cursor = state.selection.from
   const decorations = ranges.flatMap((range) => {
+    if (suppressedKeys.includes(range.key)) return []
     if (cursor < range.from || cursor > range.to) return []
     return [
       Decoration.widget(
@@ -137,10 +148,39 @@ function buildDecorations(state: EditorState) {
       ),
     ]
   })
+  const activeMarkKeys = new Set(
+    ranges
+      .filter((range) => cursor >= range.from && cursor <= range.to)
+      .map((range) => range.key),
+  )
+  const pendingDecorations = (state.storedMarks ?? []).flatMap((mark) => {
+    const syntax = markSyntax(mark.type.name, mark.attrs.href)
+    const key = `${mark.type.name}:${JSON.stringify(mark.attrs)}`
+    if (!syntax || activeMarkKeys.has(key)) return []
+    return [
+      Decoration.widget(
+        cursor,
+        markerWidget(syntax.open, -1, mark.type.name),
+        {
+          key: `pending-open-${key}-${cursor}`,
+          side: -1,
+        },
+      ),
+      Decoration.widget(
+        cursor,
+        markerWidget(syntax.close, 1, mark.type.name),
+        {
+          key: `pending-close-${key}-${cursor}`,
+          side: 1,
+        },
+      ),
+    ]
+  })
 
   return DecorationSet.create(state.doc, [
     ...blockDecorations,
     ...decorations,
+    ...pendingDecorations,
   ])
 }
 
@@ -148,6 +188,8 @@ function handleMarkerKeyDown(
   state: EditorState,
   dispatch: (transaction: ReturnType<EditorState['tr']['setMeta']>) => void,
   key: string,
+  continuationKeys: readonly string[],
+  suppressedKeys: readonly string[],
 ) {
   if (!state.selection.empty) return false
   const { $from } = state.selection
@@ -170,6 +212,76 @@ function handleMarkerKeyDown(
   }
 
   const ranges = collectMarkRanges(state)
+  if (key === 'ArrowRight') {
+    const endingMarks = ranges.filter(
+      (range) => range.to === state.selection.from,
+    )
+    if (
+      endingMarks.length &&
+      $from.parentOffset === $from.parent.content.size
+    ) {
+      if (
+        endingMarks.some(({ key: markKey }) =>
+          suppressedKeys.includes(markKey),
+        )
+      ) {
+        return false
+      }
+      const isContinuingMark = endingMarks.some(({ key: markKey }) =>
+        continuationKeys.includes(markKey),
+      )
+      const storedMarks = state.storedMarks ?? []
+      dispatch(
+        state.tr
+          .setStoredMarks(
+            isContinuingMark
+              ? storedMarks.filter(
+                  (storedMark) =>
+                    !endingMarks.some(({ mark }) => storedMark.eq(mark)),
+                )
+              : [
+                  ...storedMarks,
+                  ...endingMarks
+                    .map(({ mark }) => mark)
+                    .filter(
+                      (mark) =>
+                        !storedMarks.some((storedMark) =>
+                          storedMark.eq(mark),
+                        ),
+                    ),
+                ],
+          )
+          .setMeta(
+            markersPluginKey,
+            {
+              continuationKeys: isContinuingMark
+                ? []
+                : endingMarks.map(({ key: markKey }) => markKey),
+              suppressedKeys: isContinuingMark
+                ? endingMarks.map(({ key: markKey }) => markKey)
+                : [],
+            },
+          ),
+      )
+      return true
+    }
+    return false
+  }
+  if (key === 'Enter') {
+    const endingMark = ranges.find(
+      (range) => range.to === state.selection.from,
+    )
+    if (
+      endingMark &&
+      $from.parentOffset === $from.parent.content.size
+    ) {
+      const transaction = state.tr.split($from.pos)
+      transaction.setStoredMarks([])
+      dispatch(transaction)
+      return true
+    }
+    return false
+  }
   const boundary =
     key === 'Backspace'
       ? ranges.find((range) => range.from === state.selection.from)
@@ -183,33 +295,100 @@ function handleMarkerKeyDown(
 
 export const ContextualMarkdownMarkers = Extension.create({
   name: 'contextualMarkdownMarkers',
+  priority: 1000,
 
   addProseMirrorPlugins() {
     return [
-      new Plugin<DecorationSet>({
+      new Plugin<MarkerPluginState>({
         key: markersPluginKey,
         state: {
-          init: (_config, state) => buildDecorations(state),
-          apply: (transaction, previous, _oldState, newState) =>
-            transaction.docChanged || transaction.selectionSet
-              ? buildDecorations(newState)
-              : previous,
+          init: (_config, state) => ({
+            continuationKeys: [],
+            decorations: buildDecorations(state),
+            suppressedKeys: [],
+          }),
+          apply: (transaction, previous, _oldState, newState) => {
+            const markerState = transaction.getMeta(markersPluginKey) as
+              | {
+                  continuationKeys: string[]
+                  suppressedKeys: string[]
+                }
+              | undefined
+            const continuationKeys =
+              markerState?.continuationKeys ??
+              (transaction.selectionSet && !transaction.docChanged
+                ? []
+                : previous.continuationKeys)
+            const suppressedKeys =
+              markerState?.suppressedKeys ??
+              (transaction.docChanged ||
+              (transaction.selectionSet && !transaction.docChanged)
+                ? []
+                : previous.suppressedKeys)
+            return {
+              continuationKeys,
+              decorations:
+                markerState ||
+                transaction.docChanged ||
+                transaction.selectionSet
+                  ? buildDecorations(newState, suppressedKeys)
+                  : previous.decorations,
+              suppressedKeys,
+            }
+          },
         },
         props: {
           decorations(state) {
-            return markersPluginKey.getState(state)
+            return markersPluginKey.getState(state)?.decorations
           },
           handleKeyDown(view, event) {
-            if (event.key !== 'Backspace' && event.key !== 'Delete') {
+            if (
+              event.key !== 'Backspace' &&
+              event.key !== 'Delete' &&
+              event.key !== 'ArrowRight' &&
+              event.key !== 'Enter'
+            ) {
               return false
             }
             const handled = handleMarkerKeyDown(
               view.state,
               view.dispatch,
               event.key,
+              markersPluginKey.getState(view.state)?.continuationKeys ?? [],
+              markersPluginKey.getState(view.state)?.suppressedKeys ?? [],
             )
             if (handled) event.preventDefault()
             return handled
+          },
+          handleTextInput(view, from, to, text) {
+            const continuationKeys =
+              markersPluginKey.getState(view.state)?.continuationKeys ?? []
+            if (!continuationKeys.length) return false
+
+            const { $from } = view.state.selection
+            const continuingMarks = collectMarkRanges(view.state).filter(
+              (range) =>
+                range.to === from &&
+                continuationKeys.includes(range.key),
+            )
+            if (
+              !continuingMarks.length ||
+              $from.parentOffset !== $from.parent.content.size
+            ) {
+              return false
+            }
+
+            const marks = continuingMarks.reduce(
+              (current, { mark }) => mark.addToSet(current),
+              view.state.storedMarks ?? $from.marks(),
+            )
+            const transaction = view.state.tr.insertText(text, from, to)
+            for (const mark of marks) {
+              transaction.addMark(from, from + text.length, mark)
+            }
+            transaction.setStoredMarks(marks)
+            view.dispatch(transaction)
+            return true
           },
         },
       }),

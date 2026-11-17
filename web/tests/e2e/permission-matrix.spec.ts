@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { seedTestDatabase } from '../seed-test-db'
 import { appOrigin } from './app-origin'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 const origin = appOrigin
 
@@ -46,6 +47,7 @@ async function login(
   password: string,
 ) {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill(email)
   await page.getByLabel('密码').fill(password)
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -88,6 +90,7 @@ test('owner, collaborator and reader capabilities follow the permission matrix',
   expect(
     (
       await readerPage.request.post('/api/collaboration/applications', {
+        headers: { origin },
         data: {
           articleId: 'article-1',
           name: '读者申请',
@@ -96,15 +99,11 @@ test('owner, collaborator and reader capabilities follow the permission matrix',
         },
       })
     ).status(),
-  ).toBe(201)
+  ).toBe(410)
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await login(
-    collaboratorPage,
-    'matrix@example.com',
-    'collaborator-password',
-  )
+  await loginAsCollaborator(collaboratorPage, 'matrix@example.com')
   await expect(
     collaboratorPage.getByRole('link', { name: '写作不是归档' }),
   ).toBeVisible()

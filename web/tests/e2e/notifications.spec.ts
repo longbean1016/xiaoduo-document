@@ -3,6 +3,7 @@ import { hashPassword } from 'better-auth/crypto'
 import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { appOrigin } from './app-origin'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeAll(async () => {
   const connection = await createTestConnection()
@@ -27,31 +28,31 @@ test.beforeAll(async () => {
         await hashPassword('collaborator-password'),
       ],
     )
+    await connection.query(
+      `INSERT INTO notification (
+        id, event_key, kind, title, body, href, read_at, created_at
+      ) VALUES (
+        'historical-application-notification',
+        'application:created:historical-application',
+        'application',
+        '历史协作申请',
+        '申请通知测试申请参与《写作不是归档》',
+        '/studio/collaboration',
+        NULL,
+        NOW(3)
+      )`,
+    )
   } finally {
     await connection.end()
   }
 })
 
-test('owner reviews applications through notifications only', async ({
+test('owner can review a historical application notification', async ({
   page,
   browser,
 }) => {
-  await page.goto('/library/attention-and-writing/写作不是归档')
-  await page.getByRole('button', { name: '申请参与编辑' }).click()
-  const applicationDialog = page.getByRole('dialog', {
-    name: '申请参与编辑',
-  })
-  await applicationDialog.getByLabel('昵称').fill('申请通知测试')
-  await applicationDialog
-    .getByLabel('邮箱')
-    .fill('notify-application@example.com')
-  await applicationDialog.getByLabel('申请说明').fill('希望参与修订')
-  await applicationDialog
-    .getByRole('button', { name: '提交申请' })
-    .click()
-  await expect(page.getByText('申请已提交，等待站主审核。')).toBeVisible()
-
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -66,7 +67,7 @@ test('owner reviews applications through notifications only', async ({
   await expect(notification).toBeVisible()
   await expect(notification.locator('p').first()).toHaveText('协作申请')
   await page
-    .getByRole('button', { name: '标记已读 新的协作申请' })
+    .getByRole('button', { name: '标记已读 历史协作申请' })
     .first()
     .click()
   await expect(
@@ -75,15 +76,7 @@ test('owner reviews applications through notifications only', async ({
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await collaboratorPage.goto('/studio/login')
-  await collaboratorPage
-    .getByLabel('邮箱')
-    .fill('notify-20@example.com')
-  await collaboratorPage
-    .getByLabel('密码')
-    .fill('collaborator-password')
-  await collaboratorPage.getByRole('button', { name: '进入写作台' }).click()
-  await expect(collaboratorPage).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(collaboratorPage, 'notify-20@example.com')
   expect(
     (
       await collaboratorPage.request.get('/api/studio/notifications', {

@@ -34,23 +34,20 @@ Status: ready-for-agent (local draft; project tracker not configured)
 14. As a 读者, I want stable chapter URLs derived from category slug and title path, so that bookmarks remain meaningful.
 15. As a 读者, I want old chapter URLs to redirect after a title or category slug change, so that existing links do not break.
 
-### Applications and Invitations
+### Invitations
 
-16. As an unauthenticated 读者, I want an “申请参与编辑” entry below chapter pagination, so that the request is associated with the article I was reading.
-17. As a 协作申请人, I want to submit display name, email and a note without creating a password, so that applying does not create an unapproved account.
-18. As a 协作申请人, I want duplicate pending applications for the same email and article to be prevented, so that the review queue stays clean.
-19. As a 站主, I want a writing-desk review queue showing applicant, email, article context and note, so that I can decide whether to grant access.
-20. As a 站主, I want approving an application to generate a one-time invitation for only that article, so that approval grants the expected scope.
-21. As a 站主, I want rejecting an application to record the decision without creating an account, so that the review history remains clear.
-22. As a 站主, I want to invite someone directly by email and selected article IDs, so that I can recruit trusted contributors proactively.
-23. As a 站主, I want to copy the full invitation link and open it for debugging, so that manual delivery does not require automatic email.
+16. As a 站主, I want invitations to contain article grants without requiring the collaborator's email or display name up front, so that I can create and deliver a capability link myself.
+17. As a 站主, I want to copy the full invitation link and revoke it, so that only people who receive my private link can start activation.
+18. As an invited person, I want the invitation link to remain usable until its first successful email OTP activation, so that it acts as a one-time admission credential.
+22. As a 站主, I want to invite someone by selected article IDs, so that I can recruit trusted contributors proactively.
+23. As a 站主, I want to manage article grants after activation without reissuing an invitation, so that permissions take effect immediately.
 24. As a 站主, I want invitation states for pending, activated, expired and revoked, so that I can see whether access was accepted.
-25. As an invited person, I want to open a valid invitation, confirm my display name and set a password, so that I can activate my collaborator account.
+25. As an invited person, I want to enter my email and complete a 600-second OTP challenge, so that only the mailbox that receives the latest code can bind the invitation.
 26. As an invited person, I want an expired invitation to fail clearly while an already activated account continues to work, so that invitation expiry has predictable scope.
 
 ### Collaboration
 
-27. As a 协作者, I want to log in with my email and password through an HttpOnly Cookie session, so that my identity is not controlled by the browser.
+27. As a 协作者, I want to log in with my registered email and a latest-only OTP through an HttpOnly Cookie session, so that I do not manage another password.
 28. As a 协作者, I want the writing desk to list only articles in my 文章授权, so that unauthorized drafts and categories are not exposed.
 29. As a 协作者, I want categories to appear only when they contain an authorized article, so that the writing desk remains scoped.
 30. As a 协作者, I want direct access to an unauthorized article to show a permission error, so that hiding links is not the only protection.
@@ -130,11 +127,13 @@ Status: ready-for-agent (local draft; project tracker not configured)
 - Do not split frontend and backend services for the MVP. Frontend/backend remain logical layers in the same repository and deployment.
 - Do not add Redis, BullMQ, microservices, or a separate search service. Run cleanup and daily aggregation through a lightweight Cron worker.
 - Define `site_profile`, account, collaborator, category, article, article_grant, article_version, collaboration_application, collaboration_invite, notification, url_redirect, article_view_event, daily_article_metric and session data.
+- Keep the legacy `collaboration_application` table for historical audit but stop creating new applications.
 - Keep one current draft per article and a monotonically increasing article revision. Saves with stale revisions return a conflict and must enter comparison rather than overwrite.
 - Store article content as Tiptap JSON, canonical Markdown, and plain text. Public pages render canonical Markdown, not a read-only Tiptap instance.
 - Store manual and published versions as immutable records with author ID, author display-name snapshot and role.
-- Define application state as pending, approved or rejected. No application creates an account or password.
-- Define invitation state as pending, activated, expired or revoked. Activation binds an email and article grants to an active collaborator account.
+- Define invitation state as pending, activated, expired or revoked. Pending invitations have no email binding; the first successful OTP activation binds an email, claimed user and article grants.
+- Permit OTP activation only through a valid invitation link, and permit ordinary collaborator OTP login only for an existing active collaborator mailbox.
+- Make each new OTP invalidate the previous code. Use a 600-second expiry, 60-second resend cooldown, five attempts, five sends per rolling hour, ten per rolling 24 hours per mailbox and ten per rolling hour per IP.
 - Keep article grants as the permission atom. Derive visible studio categories from granted articles; do not grant permissions at category level in the MVP.
 - Allow owner and fully authorized collaborators to publish or update that article. Keep withdraw, permanent deletion, category management, analytics and grant management owner-only.
 - Record trash actor ID and display-name snapshot. Collaborators see and restore only their own trash items; owner sees all and is the only role allowed to permanently delete.
@@ -152,7 +151,7 @@ Status: ready-for-agent (local draft; project tracker not configured)
 - Display owner author information and actual version contributors in the same public byline area. Contributors are derived from version author records, not from grants.
 - Exclude related-article recommendations, tags, comments, likes, follows, real-time co-editing, AI authoring, knowledge graph, general team documents and Office files.
 - Do not show writing-desk links in the public site. `/studio` is reached by direct URL or approved invitation.
-- Do not auto-send invitations or transactional email in the MVP. Owner copies invitation links and generates manual password-reset links.
+- Do not auto-send invitation links. Use the configurable SMTP adapter for invitation activation and collaborator login OTP messages only.
 - Use Vitest, React Testing Library and Playwright. Use a dedicated MySQL schema/database for integration tests.
 - Use structured JSON logs, Sentry and a health endpoint. Do not deploy Prometheus, Grafana or Loki in the MVP.
 - Do not enable automated MySQL backups or OSS versioning in the MVP. Record the accepted risk that database/disk failure may cause unrecoverable loss.

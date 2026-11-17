@@ -2,15 +2,12 @@
 
 import {
   Ban,
-  Check,
-  ClipboardCheck,
   Copy,
   ExternalLink,
   MailPlus,
   RotateCcw,
   UserRoundCheck,
   Users,
-  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -19,25 +16,14 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog } from '@/components/ui/dialog'
 import {
   formatDateTime,
-  formatRelativeTime,
 } from '@/lib/format-time'
 import { cn } from '@/lib/utils'
 
-type Section = 'applications' | 'invitations' | 'collaborators'
-
-interface Application {
-  id: string
-  articleTitle: string
-  name: string
-  email: string
-  note: string
-  status: 'pending' | 'approved' | 'rejected'
-  createdAt: string | Date
-}
+type Section = 'invitations' | 'collaborators'
 
 interface Invite {
   id: string
-  email: string
+  email: string | null
   displayName: string | null
   articleIds: string[]
   source: 'application' | 'direct'
@@ -67,36 +53,25 @@ interface ArticleGrant {
   articleTitle: string
 }
 
-function formatApplicationTime(value: string | Date): string {
-  return formatRelativeTime(
-    value instanceof Date ? value.toISOString() : value,
-  )
-}
-
 function inviteUrl(token: string): string {
   return `${window.location.origin}/collaborate/accept/${token}`
 }
 
 export function CollaborationManager({
-  applications,
   invites,
   articles,
   collaborators,
   grants,
 }: {
-  applications: Application[]
   invites: Invite[]
   articles: Article[]
   collaborators: Collaborator[]
   grants: ArticleGrant[]
 }) {
   const router = useRouter()
-  const [section, setSection] = useState<Section>('applications')
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteName, setInviteName] = useState('')
+  const [section, setSection] = useState<Section>('invitations')
   const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([])
   const [generatedInviteLink, setGeneratedInviteLink] = useState('')
-  const [resetLink, setResetLink] = useState('')
   const [editingCollaborator, setEditingCollaborator] =
     useState<Collaborator | null>(null)
   const [editArticleIds, setEditArticleIds] = useState<string[]>([])
@@ -109,9 +84,6 @@ export function CollaborationManager({
     removedArticleIds: string[]
   } | null>(null)
   const [message, setMessage] = useState('')
-  const pendingApplications = applications.filter(
-    (application) => application.status === 'pending',
-  )
 
   async function copy(value: string, success: string) {
     try {
@@ -120,28 +92,6 @@ export function CollaborationManager({
     } catch {
       setMessage('浏览器没有复制权限，请手动复制链接')
     }
-  }
-
-  async function review(
-    id: string,
-    decision: 'approve' | 'reject',
-  ) {
-    const response = await fetch(
-      `/api/studio/collaboration/applications/${id}`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ decision }),
-      },
-    )
-    const payload = (await response.json()) as {
-      invite?: { token: string }
-    }
-    if (payload.invite?.token) {
-      setGeneratedInviteLink(inviteUrl(payload.invite.token))
-    }
-    setMessage(response.ok ? '审核已保存' : '审核失败')
-    router.refresh()
   }
 
   async function createInvite(event: React.FormEvent<HTMLFormElement>) {
@@ -154,8 +104,6 @@ export function CollaborationManager({
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        email: inviteEmail,
-        displayName: inviteName,
         articleIds: selectedArticleIds,
       }),
     })
@@ -167,8 +115,6 @@ export function CollaborationManager({
     }
     setMessage(response.ok ? '邀请已生成' : '邀请生成失败')
     if (response.ok) {
-      setInviteEmail('')
-      setInviteName('')
       setSelectedArticleIds([])
     }
     router.refresh()
@@ -203,25 +149,6 @@ export function CollaborationManager({
           : '账号已恢复'
         : '账号状态更新失败',
     )
-    router.refresh()
-  }
-
-  async function createReset(userId: string) {
-    const response = await fetch(
-      `/api/studio/collaboration/collaborators/${userId}/password-reset`,
-      { method: 'POST' },
-    )
-    const payload = (await response.json()) as {
-      reset?: { token: string }
-    }
-    if (payload.reset?.token) {
-      setResetLink(
-        `${window.location.origin}/collaborate/reset/${payload.reset.token}`,
-      )
-      setMessage('密码重置链接已生成')
-    } else {
-      setMessage('密码重置链接生成失败')
-    }
     router.refresh()
   }
 
@@ -302,11 +229,10 @@ export function CollaborationManager({
           <p className="section-kicker">Collaboration</p>
           <h1>协作管理</h1>
           <p>
-            申请和主动邀请都通过一次性链接激活账号。协作者只能编辑被明确授权的文章。
+            主动生成一次性邀请链接并发送给协作者。协作者只能编辑被明确授权的文章。
           </p>
         </div>
         <div className="collaboration-header-counts">
-          <span>{pendingApplications.length} 个待审核申请</span>
           <span>
             {
               collaborators.filter(
@@ -342,30 +268,9 @@ export function CollaborationManager({
           </button>
         </label>
       ) : null}
-      {resetLink ? (
-        <label className="collaboration-generated-link">
-          <span>密码重置链接</span>
-          <input
-            readOnly
-            value={resetLink}
-            aria-label="密码重置链接"
-            onFocus={(event) => event.currentTarget.select()}
-          />
-          <button
-            type="button"
-            className="studio-icon-button"
-            aria-label="复制密码重置链接"
-            onClick={() => void copy(resetLink, '重置链接已复制')}
-          >
-            <Copy size={18} />
-          </button>
-        </label>
-      ) : null}
-
       <div className="collaboration-tabs" role="tablist" aria-label="协作管理">
         {(
           [
-            ['applications', '申请审核', ClipboardCheck],
             ['invitations', '邀请记录', MailPlus],
             ['collaborators', '协作者', Users],
           ] as const
@@ -384,106 +289,16 @@ export function CollaborationManager({
         ))}
       </div>
 
-      {section === 'applications' ? (
-        <section className="collaboration-section">
-          <div className="collaboration-section-heading">
-            <div>
-              <h2>待审核申请</h2>
-              <p>申请只关联发起时所在的文章，通过后不会获得其他文章权限。</p>
-            </div>
-          </div>
-          <div className="collaboration-list">
-            {applications.map((application) => (
-              <article
-                key={application.id}
-                className="collaboration-application-row"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <strong>{application.name}</strong>
-                    <span
-                      className={cn(
-                        'studio-status',
-                        application.status === 'pending' && 'is-public',
-                      )}
-                    >
-                      {application.status === 'pending'
-                        ? '待审核'
-                        : application.status === 'approved'
-                          ? '已通过'
-                          : '已拒绝'}
-                    </span>
-                    <time>{formatApplicationTime(application.createdAt)}</time>
-                  </div>
-                  <p className="mt-1 text-[13px] text-[var(--muted)]">
-                    {application.email} · 申请编辑「{application.articleTitle}」
-                  </p>
-                  <p className="collaboration-application-note">
-                    {application.note || '没有填写申请说明'}
-                  </p>
-                </div>
-                {application.status === 'pending' ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="studio-secondary-button"
-                      onClick={() => void review(application.id, 'reject')}
-                    >
-                      <X size={17} />
-                      拒绝
-                    </button>
-                    <button
-                      type="button"
-                      className="studio-primary-button"
-                      onClick={() => void review(application.id, 'approve')}
-                    >
-                      <Check size={17} />
-                      通过
-                    </button>
-                  </div>
-                ) : null}
-              </article>
-            ))}
-            {!applications.length ? (
-              <CollaborationEmpty
-                title="还没有协作申请"
-                description="读者会在公开文章底部看到申请入口。"
-              />
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-
       {section === 'invitations' ? (
         <>
           <section className="collaboration-section">
             <div className="collaboration-section-heading">
               <div>
                 <h2>主动邀请</h2>
-                <p>填写邮箱并勾选文章，生成链接后由你手动发送。</p>
+                <p>只选择文章授权，生成一次性链接后由你主动发送。</p>
               </div>
             </div>
             <form className="collaboration-invite-form" onSubmit={createInvite}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label>
-                  <span>邮箱</span>
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(event) => setInviteEmail(event.target.value)}
-                    placeholder="name@example.com"
-                    required
-                  />
-                </label>
-                <label>
-                  <span>昵称预设</span>
-                  <input
-                    value={inviteName}
-                    onChange={(event) => setInviteName(event.target.value)}
-                    placeholder="可留空，由对方填写"
-                  />
-                </label>
-              </div>
               <ArticlePicker
                 articles={articles}
                 selected={selectedArticleIds}
@@ -508,7 +323,7 @@ export function CollaborationManager({
                 <article key={invite.id} className="collaboration-invite-row">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <strong>{invite.email}</strong>
+                      <strong>{invite.email ?? '未绑定邮箱'}</strong>
                       <span className="studio-status">
                         {invite.status === 'pending'
                           ? '待激活'
@@ -557,7 +372,7 @@ export function CollaborationManager({
               {!invites.length ? (
                 <CollaborationEmpty
                   title="还没有邀请记录"
-                  description="审核申请或主动邀请后，链接会出现在这里。"
+                  description="生成邀请链接后，记录会出现在这里。"
                 />
               ) : null}
             </div>
@@ -629,15 +444,6 @@ export function CollaborationManager({
                     ) : (
                       <RotateCcw size={19} />
                     )}
-                  </button>
-                  <button
-                    type="button"
-                    className="studio-icon-button"
-                    onClick={() => void createReset(collaborator.id)}
-                    aria-label={`生成重置链接 ${collaborator.name}`}
-                    title="生成密码重置链接"
-                  >
-                    <RotateCcw size={19} />
                   </button>
                 </article>
               )

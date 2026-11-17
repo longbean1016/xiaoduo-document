@@ -2,6 +2,7 @@ import './database-isolation'
 import { hashPassword } from 'better-auth/crypto'
 import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeAll(async () => {
   const connection = await createTestConnection()
@@ -65,6 +66,7 @@ test('counts public views and exposes details only to the owner', async ({
   const ownerContext = await browser.newContext()
   const ownerPage = await ownerContext.newPage()
   await ownerPage.goto('/studio/login')
+  await ownerPage.getByRole('button', { name: '站主密码登录' }).click()
   await ownerPage.getByLabel('邮箱').fill('owner@example.com')
   await ownerPage.getByLabel('密码').fill('owner-test-password')
   await ownerPage.getByRole('button', { name: '进入写作台' }).click()
@@ -83,15 +85,10 @@ test('counts public views and exposes details only to the owner', async ({
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await collaboratorPage.goto('/studio/login')
-  await collaboratorPage
-    .getByLabel('邮箱')
-    .fill('analytics-22@example.com')
-  await collaboratorPage
-    .getByLabel('密码')
-    .fill('collaborator-password')
-  await collaboratorPage.getByRole('button', { name: '进入写作台' }).click()
-  await expect(collaboratorPage).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(
+    collaboratorPage,
+    'analytics-22@example.com',
+  )
   expect(
     (
       await collaboratorPage.request.get('/api/studio/analytics')

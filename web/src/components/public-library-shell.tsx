@@ -13,7 +13,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { BrandMark } from '@/components/brand-mark'
 import { PublicSearchDialog } from '@/components/public-search-dialog'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ThemePicker } from '@/components/theme-picker'
 import type { PublicCategory } from '@/lib/public-library'
 import { cn } from '@/lib/utils'
 
@@ -121,13 +121,11 @@ export function PublicLibraryShell({
         <Link
           href="/"
           className="library-brand"
-          aria-label="知笺首页"
+          aria-label="小多笔记首页"
           onClick={() => setSidebarOpen(false)}
         >
           <BrandMark />
         </Link>
-        <span className="library-header-divider" />
-        <span className="library-header-title">笔记库</span>
         <div className="ml-auto flex items-center gap-1">
           <button
             ref={searchButtonRef}
@@ -139,7 +137,7 @@ export function PublicLibraryShell({
             <Search aria-hidden="true" size={19} />
             <span>搜索</span>
           </button>
-          <ThemeToggle className="library-icon-button" iconSize={20} />
+          <ThemePicker className="library-icon-button" iconSize={20} />
         </div>
       </header>
 

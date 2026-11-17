@@ -22,7 +22,13 @@ test('public preview fits the 375px viewport in both themes', async ({
   await page.goto('/')
 
   await expectNoHorizontalOverflow(page)
-  await page.getByRole('button', { name: '切换到深色主题' }).click()
+  await page
+    .getByRole('button', { name: /主题与护眼背景/ })
+    .click()
+  await page
+    .getByRole('menu')
+    .getByRole('menuitemradio', { name: '深色' })
+    .click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expectNoHorizontalOverflow(page)
 })
@@ -31,6 +37,12 @@ test('studio dashboard fits the 375px viewport in both themes', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await expectNoHorizontalOverflow(page)
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await expectNoHorizontalOverflow(page)
+  await page.getByRole('button', { name: '返回验证码登录' }).click()
+  await expectNoHorizontalOverflow(page)
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByLabel('密码').press('Enter')

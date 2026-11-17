@@ -4,9 +4,7 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db/client'
 import {
   account,
-  articleGrant,
   article,
-  collaborationApplication,
   collaborationInvite,
   collaborationInviteArticle,
   collaborationPasswordReset,
@@ -17,20 +15,9 @@ import { createNotification } from '@/server/notifications'
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
-export interface ApplicationRecord {
-  id: string
-  articleId: string
-  articleTitle: string
-  name: string
-  email: string
-  note: string
-  status: 'pending' | 'approved' | 'rejected'
-  createdAt: Date
-}
-
 export interface InviteRecord {
   id: string
-  email: string
+  email: string | null
   displayName: string | null
   articleIds: string[]
   source: 'application' | 'direct'
@@ -40,27 +27,8 @@ export interface InviteRecord {
   token?: string
 }
 
-export interface ActivatedInvitation {
-  status: 'activated'
-  userId: string
-  email: string
-  displayName: string
-}
-
-export interface AlreadyActivatedInvitation {
-  status: 'already-activated'
-}
-
-export interface ExpiredInvitation {
-  status: 'expired'
-}
-
-export interface RevokedInvitation {
-  status: 'revoked'
-}
-
 export interface InvitationActivationPreview {
-  email: string
+  email: string | null
   displayName: string | null
   articleTitles: string[]
   status: 'pending' | 'activated' | 'expired' | 'revoked'
@@ -80,7 +48,7 @@ export interface PasswordResetPreview {
   expiresAt: Date
 }
 
-function normalizeEmail(email: string) {
+export function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
 }
 
@@ -102,7 +70,7 @@ async function notifyInvitation(
     eventKey: `invitation:${status}:${invite.id}`,
     kind: 'invitation',
     title: labels[status],
-    body: `${invite.email} 的协作邀请状态变为 ${status}`,
+    body: `${invite.email ?? '未绑定邮箱'} 的协作邀请状态变为 ${status}`,
     href: '/studio/collaboration',
   })
 }
@@ -115,89 +83,15 @@ async function inviteArticleIds(inviteId: string) {
   return rows.map((row) => row.articleId)
 }
 
-export async function submitApplication(input: {
-  articleId: string
-  name: string
-  email: string
-  note: string
-}): Promise<ApplicationRecord | 'duplicate'> {
-  const email = normalizeEmail(input.email)
-  const [target] = await db
-    .select({ id: article.id })
-    .from(article)
-    .where(
-      and(
-        eq(article.id, input.articleId),
-        eq(article.publicationState, 'published'),
-        isNull(article.trashedAt),
-      ),
-    )
-    .limit(1)
-  if (!target) throw new Error('ARTICLE_NOT_FOUND')
-
-  const existing = await db
-    .select({ id: collaborationApplication.id })
-    .from(collaborationApplication)
-    .where(
-      and(
-        eq(collaborationApplication.articleId, input.articleId),
-        eq(collaborationApplication.email, email),
-        eq(collaborationApplication.status, 'pending'),
-      ),
-    )
-    .limit(1)
-  if (existing.length) return 'duplicate'
-
-  const id = crypto.randomUUID()
-  await db.insert(collaborationApplication).values({
-    id,
-    articleId: input.articleId,
-    name: input.name.trim(),
-    email,
-    note: input.note.trim(),
-    status: 'pending',
-  })
-  await createNotification({
-    eventKey: `application:created:${id}`,
-    kind: 'application',
-    title: '新的协作申请',
-    body: `${input.name.trim()} 申请参与《${(await db
-      .select({ title: article.title })
-      .from(article)
-      .where(eq(article.id, input.articleId))
-      .limit(1))[0]?.title ?? '章节'}》`,
-    href: '/studio/collaboration',
-  })
-  const application = (await listApplications()).find((item) => item.id === id)
-  if (!application) throw new Error('APPLICATION_CREATE_FAILED')
-  return application
-}
-
-export async function listApplications(): Promise<ApplicationRecord[]> {
-  return db
-    .select({
-      id: collaborationApplication.id,
-      articleId: collaborationApplication.articleId,
-      articleTitle: article.title,
-      name: collaborationApplication.name,
-      email: collaborationApplication.email,
-      note: collaborationApplication.note,
-      status: collaborationApplication.status,
-      createdAt: collaborationApplication.createdAt,
-    })
-    .from(collaborationApplication)
-    .innerJoin(article, eq(collaborationApplication.articleId, article.id))
-    .orderBy(desc(collaborationApplication.createdAt))
-}
-
 async function createInvite(input: {
-  email: string
+  email: string | null
   displayName?: string | null
   articleIds: string[]
   source: 'application' | 'direct'
   applicationId?: string | null
 }): Promise<InviteRecord> {
   const articleIds = [...new Set(input.articleIds)]
+  const email = input.email ? normalizeEmail(input.email) : null
   if (!articleIds.length) throw new Error('NO_ARTICLES')
   const valid = await db
     .select({ id: article.id })
@@ -212,8 +106,10 @@ async function createInvite(input: {
     await transaction.insert(collaborationInvite).values({
       id,
       tokenHash: hashToken(token),
-      email: normalizeEmail(input.email),
+      email,
       displayName: input.displayName?.trim() || null,
+      claimedUserId: null,
+      claimedAt: null,
       source: input.source,
       applicationId: input.applicationId ?? null,
       status: 'pending',
@@ -230,8 +126,10 @@ async function createInvite(input: {
     {
       id,
       tokenHash: hashToken(token),
-      email: normalizeEmail(input.email),
+      email,
       displayName: input.displayName?.trim() || null,
+      claimedUserId: null,
+      claimedAt: null,
       source: input.source,
       applicationId: input.applicationId ?? null,
       status: 'pending',
@@ -242,7 +140,7 @@ async function createInvite(input: {
   )
   return {
     id,
-    email: normalizeEmail(input.email),
+    email,
     displayName: input.displayName?.trim() || null,
     articleIds,
     source: input.source,
@@ -254,11 +152,17 @@ async function createInvite(input: {
 }
 
 export async function createDirectInvite(input: {
-  email: string
-  displayName?: string
   articleIds: string[]
+  /** Legacy migration compatibility; new links intentionally start unbound. */
+  email?: string
+  displayName?: string
 }) {
-  return createInvite({ ...input, source: 'direct' })
+  return createInvite({
+    articleIds: input.articleIds,
+    displayName: input.displayName,
+    email: input.email ?? null,
+    source: 'direct',
+  })
 }
 
 export async function revokePendingInvite(id: string) {
@@ -284,49 +188,6 @@ export async function revokePendingInvite(id: string) {
 
   await notifyInvitation(invite, 'revoked')
   return 'revoked' as const
-}
-
-export async function approveApplication(
-  applicationId: string,
-): Promise<InviteRecord | null> {
-  const [application] = await db
-    .select()
-    .from(collaborationApplication)
-    .where(eq(collaborationApplication.id, applicationId))
-    .limit(1)
-  if (!application || application.status !== 'pending') return null
-
-  const invite = await createInvite({
-    email: application.email,
-    displayName: application.name,
-    articleIds: [application.articleId],
-    source: 'application',
-    applicationId: application.id,
-  })
-  await db
-    .update(collaborationApplication)
-    .set({ status: 'approved', reviewedAt: new Date() })
-    .where(eq(collaborationApplication.id, applicationId))
-  return invite
-}
-
-export async function rejectApplication(applicationId: string) {
-  const [application] = await db
-    .select({ id: collaborationApplication.id })
-    .from(collaborationApplication)
-    .where(
-      and(
-        eq(collaborationApplication.id, applicationId),
-        eq(collaborationApplication.status, 'pending'),
-      ),
-    )
-    .limit(1)
-  if (!application) return false
-  await db
-    .update(collaborationApplication)
-    .set({ status: 'rejected', reviewedAt: new Date() })
-    .where(eq(collaborationApplication.id, applicationId))
-  return true
 }
 
 export async function listInvites(): Promise<InviteRecord[]> {
@@ -384,115 +245,6 @@ export async function getInvitationActivationPreview(
     status,
     expiresAt: invite.expiresAt,
   }
-}
-
-export async function activateInvitation(input: {
-  token: string
-  displayName: string
-  password: string
-}): Promise<
-  | ActivatedInvitation
-  | AlreadyActivatedInvitation
-  | ExpiredInvitation
-  | RevokedInvitation
-> {
-  return db.transaction(async (transaction) => {
-    const [invite] = await transaction
-      .select()
-      .from(collaborationInvite)
-      .where(eq(collaborationInvite.tokenHash, hashToken(input.token)))
-      .for('update')
-      .limit(1)
-    if (!invite) throw new Error('INVITE_NOT_FOUND')
-    if (invite.status === 'activated') {
-      return { status: 'already-activated' }
-    }
-    if (invite.status === 'revoked') {
-      return { status: 'revoked' }
-    }
-    if (
-      invite.status === 'expired' ||
-      invite.expiresAt.getTime() <= Date.now()
-    ) {
-      if (invite.status !== 'expired') {
-        await transaction
-          .update(collaborationInvite)
-          .set({ status: 'expired' })
-          .where(eq(collaborationInvite.id, invite.id))
-        await notifyInvitation(invite, 'expired')
-      }
-      return { status: 'expired' }
-    }
-
-    const email = normalizeEmail(invite.email)
-    const displayName = input.displayName.trim()
-    const passwordHash = await hashPassword(input.password)
-    const [existingUser] = await transaction
-      .select()
-      .from(user)
-      .where(eq(user.email, email))
-      .limit(1)
-    const userId = existingUser?.id ?? randomUUID()
-
-    if (!existingUser) {
-      await transaction.insert(user).values({
-        id: userId,
-        name: displayName,
-        email,
-        role: 'collaborator',
-        status: 'active',
-      })
-    }
-
-    const [credentialAccount] = await transaction
-      .select({ id: account.id })
-      .from(account)
-      .where(
-        and(
-          eq(account.userId, userId),
-          eq(account.providerId, 'credential'),
-        ),
-      )
-      .limit(1)
-    if (credentialAccount) {
-      await transaction
-        .update(account)
-        .set({ password: passwordHash, updatedAt: new Date() })
-        .where(eq(account.id, credentialAccount.id))
-    } else {
-      await transaction.insert(account).values({
-        id: randomUUID(),
-        accountId: userId,
-        providerId: 'credential',
-        userId,
-        password: passwordHash,
-      })
-    }
-
-    const inviteArticles = await transaction
-      .select({ articleId: collaborationInviteArticle.articleId })
-      .from(collaborationInviteArticle)
-      .where(eq(collaborationInviteArticle.inviteId, invite.id))
-    for (const { articleId } of inviteArticles) {
-      await transaction
-        .insert(articleGrant)
-        .values({ userId, articleId })
-        .onDuplicateKeyUpdate({ set: { articleId } })
-    }
-
-    await transaction
-      .update(collaborationInvite)
-      .set({ status: 'activated' })
-      .where(eq(collaborationInvite.id, invite.id))
-    await notifyInvitation(invite, 'activated')
-
-    return {
-      status: 'activated',
-      userId,
-      email,
-      displayName,
-    }
-  })
 }
 
 export async function setCollaboratorStatus(

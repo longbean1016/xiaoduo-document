@@ -10,6 +10,8 @@ const readingMarkdown = `## 阅读渲染
 
 **公开粗体**
 
+*公开斜体*
+
 | 能力 | 状态 |
 | --- | --- |
 | 表格 | 支持 |
@@ -62,6 +64,15 @@ test('public reader renders rich Markdown, code and Mermaid', async ({
     article.getByRole('heading', { name: '阅读渲染' }),
   ).toBeVisible()
   await expect(article.locator('strong')).toHaveText('公开粗体')
+  const italic = article.locator('em')
+  await expect(italic).toHaveText('公开斜体')
+  await expect
+    .poll(() =>
+      italic.evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('font-synthesis'),
+      ),
+    )
+    .toBe('style')
   await expect(article.locator('table')).toContainText('支持')
   await expect(article.locator('pre code.language-java')).toBeVisible()
   await expect(article.locator('.hljs-keyword').first()).toBeVisible()
@@ -192,4 +203,37 @@ test('public reader renders rich Markdown, code and Mermaid', async ({
       }
     }
   }
+})
+
+test('reading headings use the same compact blank-line spacing as the editor', async ({
+  page,
+}) => {
+  const connection = await createTestConnection()
+  try {
+    const markdown = '我\n\n## 我怕时间哦\n'
+    await connection.query(
+      'UPDATE article SET markdown = ?, plain_text = ? WHERE id = ?',
+      [markdown, '我 我怕时间哦', 'article-1'],
+    )
+    await connection.query(
+      `UPDATE article_version
+       SET markdown = ?, plain_text = ?
+       WHERE id = ?`,
+      [markdown, '我 我怕时间哦', 'version-1'],
+    )
+  } finally {
+    await connection.end()
+  }
+
+  await page.goto('/library/attention-and-writing/写作不是归档')
+  const article = page.locator('.markdown-body')
+  const paragraph = article.getByText('我', { exact: true })
+  const heading = article.getByRole('heading', { name: '我怕时间哦' })
+  const paragraphBox = await paragraph.boundingBox()
+  const headingBox = await heading.boundingBox()
+  if (!paragraphBox || !headingBox) throw new Error('找不到阅读页间距元素')
+
+  expect(headingBox.y - (paragraphBox.y + paragraphBox.height)).toBeLessThan(
+    40,
+  )
 })

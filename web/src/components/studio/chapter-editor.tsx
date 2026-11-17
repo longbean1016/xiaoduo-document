@@ -55,14 +55,20 @@ import {
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createEditorExtensions } from '@/components/editor/extensions'
+import {
+  handleEditorBoundaryKeyDown,
+  handleEditorCopy,
+} from '@/components/editor/editor-boundary-actions'
 import { Dialog } from '@/components/ui/dialog'
 import { Hint } from '@/components/ui/tooltip'
 import { StudioSelect } from '@/components/ui/studio-select'
+import { ThemePicker } from '@/components/theme-picker'
 import { VersionHistory, type VersionItem } from './version-history'
 import { MarkdownDiffView } from './markdown-diff-view'
 import { parseDatabaseDateTime } from '@/lib/database-time'
 import { compressImageForUpload } from '@/lib/image-compression'
 import { countWords, markdownHeadings } from '@/lib/markdown-headings'
+import { looksLikeMermaidSource } from '@/lib/markdown-mermaid'
 import { normalizeCurrentMarkdownBlock } from '@/lib/markdown-normalize'
 import type { MarkdownDiffChange } from '@/lib/markdown-diff'
 import { cn } from '@/lib/utils'
@@ -210,12 +216,30 @@ export function ChapterEditor({
           'aria-label': '章节正文',
           'data-save-state': saveState,
         },
+        handleKeyDown: handleEditorBoundaryKeyDown,
+        handleDOMEvents: {
+          copy: handleEditorCopy,
+        },
         handlePaste: (_view, event) => {
           const clipboard = event.clipboardData
           if (!clipboard) return false
           const text = clipboard.getData('text/plain')
           const html = clipboard.getData('text/html')
           if (!text) return false
+          if (looksLikeMermaidSource(text)) {
+            const currentEditor = editorRef.current
+            if (!currentEditor) return false
+            currentEditor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'codeBlock',
+                attrs: { language: 'mermaid' },
+                content: [{ type: 'text', text: text.trim() }],
+              })
+              .run()
+            return true
+          }
           const htmlText = html
             ? new DOMParser()
                 .parseFromString(html, 'text/html')
@@ -802,6 +826,7 @@ export function ChapterEditor({
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemePicker className="studio-editor-theme-toggle" />
           <div className="studio-view-switch studio-desktop-compare-switch">
             <button
               type="button"

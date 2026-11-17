@@ -56,6 +56,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { createEditorExtensions } from '../../components/editor/extensions'
 import {
+  handleEditorBoundaryKeyDown,
+  handleEditorCopy,
+} from '../../components/editor/EditorBoundaryActions'
+import {
   MarkdownDiffNavigator,
   MarkdownDiffPane,
 } from '../../components/studio/MarkdownDiffNavigator'
@@ -64,6 +68,7 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Hint } from '../../components/ui/Tooltip'
 import { compressImageFile } from '../../lib/images'
 import { markdownHeadings } from '../../lib/markdownHeadings'
+import { looksLikeMermaidSource } from '../../lib/markdownMermaid'
 import {
   buildMarkdownDiff,
   type MarkdownDiffChange,
@@ -177,12 +182,30 @@ export function StudioNotePage() {
           class: 'zhijian-prose markdown-body studio-prose',
           spellcheck: 'false',
         },
+        handleKeyDown: handleEditorBoundaryKeyDown,
+        handleDOMEvents: {
+          copy: handleEditorCopy,
+        },
         handlePaste: (_view, event) => {
           const clipboard = event.clipboardData
           if (!clipboard) return false
           const text = clipboard.getData('text/plain')
           const html = clipboard.getData('text/html')
           if (!text) return false
+          if (looksLikeMermaidSource(text)) {
+            const currentEditor = editorRef.current
+            if (!currentEditor) return false
+            currentEditor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'codeBlock',
+                attrs: { language: 'mermaid' },
+                content: [{ type: 'text', text: text.trim() }],
+              })
+              .run()
+            return true
+          }
           const htmlText = html
             ? new DOMParser()
                 .parseFromString(html, 'text/html')

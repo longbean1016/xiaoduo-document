@@ -6,8 +6,8 @@ import {
 } from '@/lib/public-library'
 
 export const metadata: Metadata = {
-  title: '搜索 · 知笺',
-  description: '搜索知笺已发布分类和章节。',
+  title: '搜索 · 小多笔记',
+  description: '搜索小多笔记已发布分类和章节。',
 }
 
 export default async function SearchPage({

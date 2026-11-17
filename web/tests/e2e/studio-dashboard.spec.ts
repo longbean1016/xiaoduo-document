@@ -3,6 +3,7 @@ import { hashPassword } from 'better-auth/crypto'
 import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { seedTestDatabase } from '../seed-test-db'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeEach(async () => {
   await seedTestDatabase()
@@ -39,6 +40,7 @@ test.beforeEach(async () => {
 
 test('owner filters and searches accessible chapters', async ({ page }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -94,6 +96,7 @@ test('owner selects one or multiple chapters before moving them to trash', async
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -155,6 +158,7 @@ test('owner confirms category before creating a chapter draft', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -202,11 +206,7 @@ test('owner confirms category before creating a chapter draft', async ({
 test('collaborator sees only authorized chapters and no owner actions', async ({
   page,
 }) => {
-  await page.goto('/studio/login')
-  await page.getByLabel('邮箱').fill('dashboard@example.com')
-  await page.getByLabel('密码').fill('collaborator-password')
-  await page.getByRole('button', { name: '进入写作台' }).click()
-  await expect(page).toHaveURL(/\/studio$/)
+  await loginAsCollaborator(page, 'dashboard@example.com')
 
   await expect(
     page.getByRole('heading', { level: 1, name: '写作台' }),

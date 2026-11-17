@@ -3,7 +3,6 @@ import { grantArticle } from '@/server/article-access'
 import { publishArticle } from '@/server/articles'
 import {
   createDirectInvite,
-  submitApplication,
 } from '@/server/collaboration'
 import {
   createNotification,
@@ -68,11 +67,12 @@ describe('owner notification center', () => {
       await connection.end()
     }
 
-    await submitApplication({
-      articleId: 'article-1',
-      name: '协作者甲',
-      email: 'events@example.com',
-      note: '希望参与',
+    await createNotification({
+      eventKey: 'application:created:historical-application',
+      kind: 'application',
+      title: '历史协作申请',
+      body: '协作者甲申请参与《写作不是归档》',
+      href: '/studio/collaboration',
     })
     await createDirectInvite({
       email: 'invited@example.com',

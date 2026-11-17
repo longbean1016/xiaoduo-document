@@ -173,7 +173,7 @@ export function NotificationCenter({
         <div className="notification-empty">
           <MailPlus size={26} />
           <p>暂无通知</p>
-          <span>协作申请、邀请、授权和发布事件会出现在这里。</span>
+          <span>邀请、授权和发布事件会出现在这里。</span>
         </div>
       ) : null}
     </div>

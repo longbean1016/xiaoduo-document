@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth/minimal'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
+import { emailOTP } from 'better-auth/plugins/email-otp'
 import { db } from '@/db/client'
 import { account, session, user, verification } from '@/db/schema'
 
@@ -51,5 +52,18 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    emailOTP({
+      allowedAttempts: 5,
+      disableSignUp: true,
+      expiresIn: 600,
+      resendStrategy: 'rotate',
+      storeOTP: 'hashed',
+      rateLimit: { window: 60, max: 5 },
+      async sendVerificationOTP() {
+        // OTP delivery is gated by the collaboration request endpoints.
+      },
+    }),
+    nextCookies(),
+  ],
 })

@@ -3,6 +3,7 @@ import { hashPassword } from 'better-auth/crypto'
 import { expect, test } from '@playwright/test'
 import { createTestConnection } from '../test-db'
 import { appOrigin } from './app-origin'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 const origin = appOrigin
 
@@ -39,6 +40,7 @@ test('owner grants one article and collaborator cannot access the rest', async (
   browser,
 }) => {
   await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
@@ -71,16 +73,7 @@ test('owner grants one article and collaborator cannot access the rest', async (
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()
-  await collaboratorPage.goto('/studio/login')
-  await collaboratorPage.getByLabel('邮箱').fill('granted@example.com')
-  await collaboratorPage.getByLabel('密码').fill('collaborator-password')
-  const [loginResponse] = await Promise.all([
-    collaboratorPage.waitForResponse((response) =>
-      response.url().endsWith('/api/auth/sign-in/email'),
-    ),
-    collaboratorPage.getByRole('button', { name: '进入写作台' }).click(),
-  ])
-  expect(loginResponse.status()).toBe(200)
+  await loginAsCollaborator(collaboratorPage, 'granted@example.com')
   await expect(
     collaboratorPage.getByRole('heading', { name: '写作台' }),
   ).toBeVisible()

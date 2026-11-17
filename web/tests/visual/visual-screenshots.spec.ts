@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
+import { auth } from '../../src/lib/auth'
 import { compareVisualScreenshots } from './compare'
 import { visualFixture } from './fixture'
 import {
@@ -70,20 +71,30 @@ async function prepareProductionPage(
     document.documentElement.style.colorScheme = theme
   }, themeMode)
   if (role) {
-    const login = await page.request.post(
-      `${visualOrigins.production}/api/auth/sign-in/email`,
-      {
-        headers: { origin: visualOrigins.production },
-        data: {
-          email:
-            role === 'owner' ? 'owner@example.com' : 'zhou@example.com',
-          password:
-            role === 'owner'
-              ? 'owner-test-password'
-              : 'collaborator-password',
-        },
-      },
-    )
+    const login =
+      role === 'owner'
+        ? await page.request.post(
+            `${visualOrigins.production}/api/auth/sign-in/email`,
+            {
+              headers: { origin: visualOrigins.production },
+              data: {
+                email: 'owner@example.com',
+                password: 'owner-test-password',
+              },
+            },
+          )
+        : await (async () => {
+            const otp = await auth.api.createVerificationOTP({
+              body: { email: 'zhou@qq.com', type: 'sign-in' },
+            })
+            return page.request.post(
+              `${visualOrigins.production}/api/collaboration/login/verify-otp`,
+              {
+                headers: { origin: visualOrigins.production },
+                data: { email: 'zhou@qq.com', otp },
+              },
+            )
+          })()
     expect(login.ok()).toBeTruthy()
   }
   await page.goto(`${visualOrigins.production}${targetPath}`)
@@ -191,20 +202,12 @@ async function applyVisualInteraction(
   if (interaction === 'open-public-search') {
     await page.getByRole('button', { name: '搜索' }).first().click()
     await expect(
-      page.getByRole('dialog', { name: '搜索知笺' }),
+      page.getByRole('dialog', { name: '搜索小多笔记' }),
     ).toBeVisible()
     await page
       .getByPlaceholder('搜索分类或章节')
       .fill(searchQuery ?? '写作')
     return
-  }
-  if (interaction === 'open-collaboration-application') {
-    await page
-      .getByRole('button', { name: '申请参与编辑' })
-      .click()
-    await expect(
-      page.getByRole('dialog', { name: '申请参与编辑' }),
-    ).toBeVisible()
   }
   if (interaction === 'open-version-history') {
     if ((page.viewportSize()?.width ?? 1280) <= 767) {
@@ -275,7 +278,7 @@ test('shared components support dialog focus, tooltip, and keyboard select', asy
 test('public search opens by shortcut and returns focus', async ({ page }) => {
   await page.goto(`${visualOrigins.production}/visual-fixtures/public-shell`)
   await page.keyboard.press('ControlOrMeta+KeyK')
-  const dialog = page.getByRole('dialog', { name: '搜索知笺' })
+  const dialog = page.getByRole('dialog', { name: '搜索小多笔记' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByLabel('搜索公开章节')).toBeFocused()
   await page.keyboard.press('Escape')

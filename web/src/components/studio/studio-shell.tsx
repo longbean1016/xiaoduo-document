@@ -22,10 +22,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog } from '@/components/ui/dialog'
 import { StudioSelect } from '@/components/ui/studio-select'
-import {
-  StudioSurfacePicker,
-  useStudioSurface,
-} from '@/components/studio/studio-surface-picker'
+import { ThemePicker } from '@/components/theme-picker'
 import { Toaster } from '@/components/ui/toaster'
 import { cn } from '@/lib/utils'
 import { signOutAction } from '@/app/actions/auth'
@@ -52,7 +49,6 @@ export function StudioShell({
   const pathname = usePathname()
   const router = useRouter()
   const isOwner = role === 'owner'
-  const studioSurface = useStudioSurface()
   const isEditor = pathname.startsWith('/studio/notes/')
   const orderedCategories = [...categories].sort(
     (left, right) => left.position - right.position,
@@ -114,10 +110,15 @@ export function StudioShell({
 
   return (
     <>
-      <div className="studio-shell" data-studio-surface={studioSurface}>
+      <div className="studio-shell">
+      {!isEditor ? (
+        <div className="studio-theme-picker-fixed">
+          <ThemePicker />
+        </div>
+      ) : null}
       {!isEditor ? (
         <div className="studio-mobile-bar">
-          <BrandMark compact />
+          <BrandMark compact label="小多写作台" />
           <nav aria-label="写作台导航">
             <StudioMobileNav
               to="/studio"
@@ -180,10 +181,7 @@ export function StudioShell({
 
       <aside className="studio-sidebar">
         <div className="px-5 pb-5 pt-5">
-          <BrandMark />
-          <p className="mt-2 text-[12px] uppercase tracking-[0.18em] text-[var(--muted-faint)]">
-            Writing studio
-          </p>
+          <BrandMark label="小多写作台" />
         </div>
 
         {isOwner ? (
@@ -255,9 +253,6 @@ export function StudioShell({
             查看公开站
             <ArrowUpRight size={17} />
           </Link>
-          <div className="mt-3">
-            <StudioSurfacePicker />
-          </div>
           <div className="mt-4 flex items-center gap-2.5 px-2">
             <AuthorAvatar
               name={currentName}
@@ -299,6 +294,7 @@ export function StudioShell({
 
       <main className="studio-main">
         <div
+          key={pathname}
           className={cn(
             'studio-route-view',
             isEditor && 'is-editor',
@@ -352,7 +348,11 @@ export function StudioShell({
         open={signOutOpen}
         onOpenChange={setSignOutOpen}
         title="退出登录？"
-        description="退出后需要重新输入邮箱和密码才能进入写作台。"
+        description={
+          role === 'owner'
+            ? '退出后需要重新输入邮箱和密码才能进入写作台。'
+            : '退出后需要重新通过邮箱验证码进入写作台。'
+        }
         confirmLabel="退出登录"
         onConfirm={() => signOutFormRef.current?.requestSubmit()}
       />

@@ -6,7 +6,7 @@ import {
 } from '@/lib/public-library'
 
 export const metadata: Metadata = {
-  title: '知笺 · 个人知识库',
+  title: '小多笔记',
   description: '按分类与章节组织的个人公开知识书',
 }
 

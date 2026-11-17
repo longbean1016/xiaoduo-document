@@ -13,7 +13,7 @@ test('mobile reading, search, themes and studio controls remain usable', async (
 }) => {
   await page.goto('/library/attention-and-writing/写作不是归档')
   const themeToggle = page.getByRole('button', {
-    name: '切换到深色主题',
+    name: /主题与护眼背景/,
   })
   await expect(themeToggle).toBeVisible()
   await expect
@@ -26,9 +26,13 @@ test('mobile reading, search, themes and studio controls remain usable', async (
 
   await themeToggle.focus()
   await page.keyboard.press('Enter')
+  await page
+    .getByRole('menu')
+    .getByRole('menuitemradio', { name: '深色' })
+    .click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(
-    page.getByRole('button', { name: '切换到浅色主题' }),
+    page.getByRole('button', { name: /主题与护眼背景：深色/ }),
   ).toBeVisible()
   const contrast = await page.evaluate(() => {
     const parse = (value: string) =>
@@ -63,29 +67,24 @@ test('mobile reading, search, themes and studio controls remain usable', async (
 
   await page.getByRole('button', { name: '搜索' }).click()
   await page
-    .getByRole('dialog', { name: '搜索知笺' })
+    .getByRole('dialog', { name: '搜索小多笔记' })
     .getByLabel('搜索公开章节')
     .fill('写作')
   await page
-    .getByRole('dialog', { name: '搜索知笺' })
+    .getByRole('dialog', { name: '搜索小多笔记' })
     .getByLabel('搜索公开章节')
     .press('Enter')
   await expect(page).toHaveURL(/\/search\?q=/)
   await expect(page.getByText('1 条结果')).toBeVisible()
 
   await page.goto('/library/attention-and-writing/写作不是归档')
-  await page.getByRole('button', { name: '申请参与编辑' }).click()
-  const applicationDialog = page.getByRole('dialog', {
-    name: '申请参与编辑',
-  })
-  await expect(applicationDialog.getByLabel('昵称')).toBeVisible()
-  await expect(applicationDialog.getByLabel('申请说明')).toBeVisible()
   await expect(
-    applicationDialog.getByRole('button', { name: '提交申请' }),
-  ).toBeVisible()
-  await page.keyboard.press('Escape')
+    page.getByRole('button', { name: '申请参与编辑' }),
+  ).toHaveCount(0)
 
   await page.goto('/studio/login')
+
+  await page.getByRole('button', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByLabel('密码').press('Enter')
