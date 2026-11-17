@@ -322,3 +322,45 @@ export async function verifyCollaboratorLoginOtp(input: {
     headers: input.headers,
   })
 }
+
+async function requireActiveOwner(email: string) {
+  const [existing] = await db
+    .select({ id: user.id, role: user.role, status: user.status })
+    .from(user)
+    .where(eq(user.email, email))
+    .limit(1)
+  if (!existing || existing.role !== 'owner') {
+    throw new Error('OWNER_NOT_FOUND')
+  }
+  if (existing.status !== 'active') throw new Error('ACCOUNT_SUSPENDED')
+  return existing
+}
+
+export async function requestOwnerRecoveryOtp(input: {
+  email: string
+  ip: string
+  mailer: OtpEmailSender
+}) {
+  const email = normalizeEmail(input.email)
+  await requireActiveOwner(email)
+  await createAndSendOtp({
+    email,
+    ip: input.ip,
+    mailer: input.mailer,
+    purpose: 'owner_recovery',
+  })
+}
+
+export async function verifyOwnerRecoveryOtp(input: {
+  email: string
+  otp: string
+  headers: Headers
+}) {
+  const email = normalizeEmail(input.email)
+  await requireActiveOwner(email)
+  return auth.api.signInEmailOTP({
+    asResponse: true,
+    body: { email, otp: input.otp },
+    headers: input.headers,
+  })
+}

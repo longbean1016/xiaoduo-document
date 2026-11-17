@@ -37,6 +37,12 @@ test('studio dashboard fits the 375px viewport in both themes', async ({
   page,
 }) => {
   await page.goto('/studio/login')
+  await expectNoHorizontalOverflow(page)
+  await page.getByRole('tab', { name: '站主验证码登录' }).click()
+  await expectNoHorizontalOverflow(page)
+  await page.getByRole('tab', { name: '协作者验证码登录' }).click()
+  await expectNoHorizontalOverflow(page)
+  await page.getByRole('tab', { name: '站主密码登录' }).click()
   await page.getByLabel('邮箱').fill('owner@example.com')
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByLabel('密码').press('Enter')

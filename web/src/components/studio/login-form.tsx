@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type FormEvent } from 'react'
 
-type LoginMode = 'owner' | 'collaborator'
+type LoginMode = 'owner' | 'owner-otp' | 'collaborator'
 
 const otpErrors: Record<string, string> = {
   ACCOUNT_SUSPENDED: '此协作账号已停用，请联系站主。',
@@ -23,6 +23,7 @@ const otpErrors: Record<string, string> = {
   OTP_EMAIL_DAILY_LIMIT: '该邮箱今天发送次数过多，请明天再试。',
   OTP_EMAIL_HOURLY_LIMIT: '该邮箱发送过于频繁，请稍后再试。',
   OTP_IP_HOURLY_LIMIT: '当前网络发送过于频繁，请稍后再试。',
+  OWNER_NOT_FOUND: '未找到站主账号，请检查邮箱。',
 }
 
 export function LoginForm() {
@@ -64,8 +65,12 @@ export function LoginForm() {
 
     setSendPending(true)
     try {
+      const endpoint =
+        mode === 'owner-otp'
+          ? '/api/owner/recovery/request-otp'
+          : '/api/collaboration/login/request-otp'
       const response = await fetch(
-        '/api/collaboration/login/request-otp',
+        endpoint,
         {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -94,25 +99,27 @@ export function LoginForm() {
     setError('')
     setNotice('')
 
-    if (mode === 'collaborator' && !/^\d{6}$/.test(otp)) {
+    if (mode !== 'owner' && !/^\d{6}$/.test(otp)) {
       setError('请输入 6 位验证码。')
       return
     }
 
     setPending(true)
     try {
-      const response =
+      const response = await fetch(
         mode === 'owner'
-          ? await fetch('/api/auth/sign-in/email', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ email, password }),
-            })
-          : await fetch('/api/collaboration/login/verify-otp', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ email, otp }),
-            })
+          ? '/api/auth/sign-in/email'
+          : mode === 'owner-otp'
+            ? '/api/owner/recovery/verify-otp'
+            : '/api/collaboration/login/verify-otp',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(
+            mode === 'owner' ? { email, password } : { email, otp },
+          ),
+        },
+      )
       if (!response.ok) {
         if (mode === 'owner') {
           setError('邮箱或密码不正确，或账号已停用。')
@@ -201,6 +208,15 @@ export function LoginForm() {
               onClick={() => changeMode('owner')}
             >
               站主密码登录
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'owner-otp'}
+              className={mode === 'owner-otp' ? 'is-active' : undefined}
+              onClick={() => changeMode('owner-otp')}
+            >
+              站主验证码登录
             </button>
             <button
               type="button"
