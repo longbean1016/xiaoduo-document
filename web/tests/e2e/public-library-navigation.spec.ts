@@ -1,6 +1,7 @@
 import './database-isolation'
 import { expect, test } from '@playwright/test'
 import { seedTestDatabase } from '../seed-test-db'
+import { createTestConnection } from '../test-db'
 
 test.beforeEach(async () => {
   await seedTestDatabase()
@@ -70,4 +71,63 @@ test('collaboration application entry is removed from public chapters', async ({
   await expect(
     page.getByRole('button', { name: '申请参与编辑' }),
   ).toHaveCount(0)
+})
+
+test('library index reflects published data without rebuilding the app', async ({
+  page,
+}) => {
+  const connection = await createTestConnection()
+  try {
+    await connection.query(
+      `INSERT INTO category (id, title, slug, position)
+       VALUES (?, ?, ?, ?)`,
+      ['category-live', '实时发布分类', 'live-published', 99],
+    )
+    await connection.query(
+      `INSERT INTO article (
+        id, category_id, title, path, position, markdown, plain_text,
+        revision, publication_state, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), NOW(3))`,
+      [
+        'article-live',
+        'category-live',
+        '构建后发布的章节',
+        '构建后发布的章节',
+        1,
+        '实时数据库内容',
+        '实时数据库内容',
+        1,
+        'published',
+      ],
+    )
+    await connection.query(
+      `INSERT INTO article_version (
+        id, article_id, kind, title, category_id, path, markdown, plain_text,
+        author_id, author_name, author_role, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3))`,
+      [
+        'version-live',
+        'article-live',
+        'published',
+        '构建后发布的章节',
+        'category-live',
+        '构建后发布的章节',
+        '实时数据库内容',
+        '实时数据库内容',
+        'owner-1',
+        '小多',
+        'owner',
+      ],
+    )
+  } finally {
+    await connection.end()
+  }
+
+  await page.goto('/library')
+  await expect(
+    page
+      .locator('.chapter-list-row')
+      .filter({ hasText: '实时发布分类' }),
+  ).toBeVisible()
+  await expect(page.getByText('笔记库还是空的')).toHaveCount(0)
 })
