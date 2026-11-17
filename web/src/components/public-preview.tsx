@@ -1,132 +1,102 @@
+'use client'
+
+import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, ChevronRight } from 'lucide-react'
-import { BrandMark } from '@/components/brand-mark'
-import { ThemePicker } from '@/components/theme-picker'
+import { useEffect, useState } from 'react'
 import type {
   PublicCategory,
   PublicSiteProfile,
 } from '@/lib/public-library'
 
+function formatSceneTime(date: Date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${month} / ${day} · ${hours}:${minutes}`
+}
+
 export function PublicPreview({
   profile,
-  categories,
 }: {
   profile: PublicSiteProfile | null
   categories: PublicCategory[]
 }) {
-  const authorName = profile?.authorName ?? '站内作者'
-  const publishedCount = categories.reduce(
-    (total, category) => total + category.chapters.length,
-    0,
-  )
-  const previewCategory = categories[0] ?? null
-  const previewNotes = previewCategory?.chapters.slice(0, 4) ?? []
+  const ownerName = profile?.authorName ?? '小多'
+  const [sceneTime, setSceneTime] = useState('-- / -- · --:--')
+
+  useEffect(() => {
+    const updateTime = () => setSceneTime(formatSceneTime(new Date()))
+    updateTime()
+    const timer = window.setInterval(updateTime, 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   return (
-    <main className="landing-page">
-      <header className="landing-header">
-        <Link href="/" aria-label="小多笔记首页">
-          <BrandMark />
-        </Link>
-        <div className="flex items-center gap-2">
-          <ThemePicker className="landing-icon-button" iconSize={21} />
-          <Link href="/library" className="landing-header-link">
-            进入笔记库
-            <ArrowRight size={18} />
-          </Link>
-        </div>
-      </header>
-
-      <section className="landing-hero">
-        <div className="landing-copy">
-          <p className="landing-kicker">Personal knowledge library</p>
-          <h1>
-            把零散的知识，
-            <br />
-            整理成一本
-            <br />
-            可以一直读下去的书。
-          </h1>
-          <p className="landing-lede">
-            {authorName}的个人知识库。按分类与章节组织长期笔记，适合系统阅读，也适合随手返回某一页继续查证。
-          </p>
-          <div className="landing-actions">
-            <Link href="/library" className="landing-primary-button">
-              进入笔记库
-              <ArrowRight size={20} />
-            </Link>
-            <span className="landing-count">
-              <BookOpen size={18} />
-              {categories.length} 个分类
-              <span />
-              {publishedCount} 篇公开章节
-            </span>
+    <main className="coast-landing">
+      <div className="coast-landing-scene" aria-hidden="true">
+        <div className="coast-landing-layer">
+          <div className="coast-landing-image">
+            <Image
+              src="/xiaoduo-coast.jpg"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              draggable={false}
+            />
           </div>
+        </div>
+        <span className="coast-landing-shade" />
+        <span className="coast-landing-light" />
+        <span className="coast-landing-horizon" />
+        <span className="coast-landing-grain" />
+        <span className="coast-landing-mist" />
+        <div className="coast-landing-particles">
+          {Array.from({ length: 18 }, (_, index) => (
+            <i key={index} />
+          ))}
+        </div>
+        <div className="coast-landing-sparkles">
+          {Array.from({ length: 14 }, (_, index) => (
+            <i key={index} />
+          ))}
+        </div>
+      </div>
+
+      <section className="coast-landing-hero">
+        <div className="coast-landing-copy">
+          <p className="coast-landing-eyebrow coast-landing-reveal-1">
+            <span aria-hidden="true" />
+            {ownerName}个人笔记
+          </p>
+
+          <h1 className="coast-landing-reveal-2">
+            <span>一片海，</span>
+            <span>几分牵挂。</span>
+          </h1>
+
+          <p className="coast-landing-lede coast-landing-reveal-3">
+            路上的风景、读过的句子，和偶尔牵挂的人。
+          </p>
+        </div>
+
+        <div
+          className="coast-landing-caption coast-landing-reveal-4"
+          aria-hidden="true"
+        >
+          <span />
+          <time>{sceneTime}</time>
         </div>
 
         <Link
           href="/library"
-          className="landing-preview"
-          aria-label="预览笔记库"
+          className="coast-landing-cta coast-landing-reveal-5"
         >
-          <div className="landing-preview-top">
-            <span className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-[var(--rust)]" />
-              小多笔记
-            </span>
-            <span>预览</span>
-          </div>
-          <div className="landing-preview-body">
-            <aside>
-              <p>目录</p>
-              {categories.slice(0, 3).map((category, index) => (
-                <div
-                  key={category.id}
-                  className="landing-preview-category"
-                >
-                  <span className={index === 0 ? 'is-active' : ''}>
-                    {String(index + 1).padStart(2, '0')} {category.title}
-                  </span>
-                  {index === 0
-                    ? previewNotes.slice(0, 3).map((note, noteIndex) => (
-                        <span
-                          key={note.articleId}
-                          className={noteIndex === 0 ? 'is-current' : ''}
-                        >
-                          {note.title}
-                        </span>
-                      ))
-                    : null}
-                </div>
-              ))}
-            </aside>
-            <div className="landing-preview-content">
-              <p className="landing-preview-breadcrumb">
-                {previewCategory?.title ?? '小多笔记'}
-                <ChevronRight size={15} />
-                第一章
-              </p>
-              <h2>
-                {previewNotes[0]?.title ?? '开始整理你的知识'}
-              </h2>
-              <p>
-                {previewNotes[0]?.plainText.slice(0, 90) ??
-                  '把长期笔记组织成清晰的分类和章节。'}
-              </p>
-              <div className="landing-preview-lines">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-          </div>
+          进入笔记库
+          <span aria-hidden="true">↗</span>
         </Link>
       </section>
-
-      <footer className="landing-footer">
-        <span>小多笔记 · {authorName}</span>
-        <span>从一页笔记开始，慢慢形成自己的目录。</span>
-      </footer>
     </main>
   )
 }

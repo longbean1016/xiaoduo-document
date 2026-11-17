@@ -11,10 +11,7 @@ test('reader navigates the public library and adjacent chapters', async ({
 }) => {
   await page.setViewportSize({ width: 1440, height: 500 })
   await page.goto('/')
-  await page
-    .locator('.landing-header')
-    .getByRole('link', { name: '进入笔记库' })
-    .click()
+  await page.getByRole('link', { name: '进入笔记库' }).click()
   await expect(page).toHaveURL(/\/library$/)
   await expect(
     page.getByRole('navigation', { name: '笔记目录' }),
