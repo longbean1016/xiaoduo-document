@@ -9,11 +9,9 @@ import {
 } from 'lucide-react'
 import { MarkdownArticle } from '@/components/markdown-article'
 import { AuthorAvatar } from '@/components/author-avatar'
-import { PublicCollaborationForm } from '@/components/public-collaboration-form'
 import { ArticleViewBeacon } from '@/components/article-view-beacon'
 import { ChapterToc } from '@/components/chapter-toc'
 import { formatDateTime } from '@/lib/format-time'
-import { getServerSession } from '@/lib/server-session'
 import {
   getPublicChapterByPath,
   getPublicChapterNavigation,
@@ -94,7 +92,6 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
     decodedChapterPath,
   )
   const profile = await getPublicSiteProfile()
-  const session = await getServerSession()
   const authorName = profile?.authorName ?? chapter.authorName
   const authors = [
     {
@@ -209,12 +206,6 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
             )}
           </nav>
 
-          {!session ? (
-            <PublicCollaborationForm
-              articleId={chapter.id}
-              articleTitle={chapter.title}
-            />
-          ) : null}
         </div>
 
         {headings.length ? <ChapterToc headings={headings} /> : null}

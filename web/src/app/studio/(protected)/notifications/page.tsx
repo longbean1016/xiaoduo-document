@@ -19,7 +19,7 @@ export default async function NotificationsPage() {
         <div>
           <p className="section-kicker">Notifications</p>
           <h1>通知中心</h1>
-          <p>协作申请、邀请、授权和协作者发布事件集中显示在这里。</p>
+          <p>邀请、授权和协作者发布事件集中显示在这里。</p>
         </div>
       </header>
       <NotificationCenter initialItems={notifications} />

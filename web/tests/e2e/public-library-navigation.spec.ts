@@ -63,29 +63,14 @@ test('reader navigates the public library and adjacent chapters', async ({
   ).toBeVisible()
 })
 
-test('application entry is shown only to signed-out readers', async ({
+test('collaboration application entry is removed from public chapters', async ({
   page,
 }) => {
   await page.goto('/library/attention-and-writing/写作不是归档')
   await expect(
     page.getByText('愿意一起完善这篇笔记？'),
-  ).toBeVisible()
-  await page
-    .getByRole('button', { name: '申请参与编辑' })
-    .click()
+  ).toHaveCount(0)
   await expect(
-    page.getByRole('dialog', { name: '申请参与编辑' }),
-  ).toContainText('申请将关联《写作不是归档》')
-  await page.keyboard.press('Escape')
-
-  await page.goto('/studio/login')
-  await page.getByLabel('邮箱').fill('owner@example.com')
-  await page.getByLabel('密码').fill('owner-test-password')
-  await page.getByRole('button', { name: '进入写作台' }).click()
-  await expect(page).toHaveURL(/\/studio$/)
-
-  await page.goto('/library/attention-and-writing/写作不是归档')
-  await expect(
-    page.getByText('愿意一起完善这篇笔记？'),
+    page.getByRole('button', { name: '申请参与编辑' }),
   ).toHaveCount(0)
 })

@@ -7,7 +7,6 @@ import {
 } from '@/server/article-access'
 import {
   listCollaborators,
-  listApplications,
   listInvites,
 } from '@/server/collaboration'
 
@@ -24,7 +23,6 @@ export default async function CollaborationPage() {
   ])
   return (
     <CollaborationManager
-      applications={await listApplications()}
       invites={await listInvites()}
       articles={articles}
       collaborators={collaborators}

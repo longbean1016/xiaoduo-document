@@ -89,6 +89,7 @@ test('owner, collaborator and reader capabilities follow the permission matrix',
   expect(
     (
       await readerPage.request.post('/api/collaboration/applications', {
+        headers: { origin },
         data: {
           articleId: 'article-1',
           name: '读者申请',
@@ -97,7 +98,7 @@ test('owner, collaborator and reader capabilities follow the permission matrix',
         },
       })
     ).status(),
-  ).toBe(201)
+  ).toBe(410)
 
   const collaboratorContext = await browser.newContext()
   const collaboratorPage = await collaboratorContext.newPage()

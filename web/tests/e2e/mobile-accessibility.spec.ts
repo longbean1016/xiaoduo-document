@@ -78,16 +78,9 @@ test('mobile reading, search, themes and studio controls remain usable', async (
   await expect(page.getByText('1 条结果')).toBeVisible()
 
   await page.goto('/library/attention-and-writing/写作不是归档')
-  await page.getByRole('button', { name: '申请参与编辑' }).click()
-  const applicationDialog = page.getByRole('dialog', {
-    name: '申请参与编辑',
-  })
-  await expect(applicationDialog.getByLabel('昵称')).toBeVisible()
-  await expect(applicationDialog.getByLabel('申请说明')).toBeVisible()
   await expect(
-    applicationDialog.getByRole('button', { name: '提交申请' }),
-  ).toBeVisible()
-  await page.keyboard.press('Escape')
+    page.getByRole('button', { name: '申请参与编辑' }),
+  ).toHaveCount(0)
 
   await page.goto('/studio/login')
   await page.getByLabel('邮箱').fill('owner@example.com')

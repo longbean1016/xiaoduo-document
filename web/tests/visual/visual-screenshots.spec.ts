@@ -209,14 +209,6 @@ async function applyVisualInteraction(
       .fill(searchQuery ?? '写作')
     return
   }
-  if (interaction === 'open-collaboration-application') {
-    await page
-      .getByRole('button', { name: '申请参与编辑' })
-      .click()
-    await expect(
-      page.getByRole('dialog', { name: '申请参与编辑' }),
-    ).toBeVisible()
-  }
   if (interaction === 'open-version-history') {
     if ((page.viewportSize()?.width ?? 1280) <= 767) {
       await page.getByRole('button', { name: '历史', exact: true }).click()

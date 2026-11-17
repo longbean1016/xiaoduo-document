@@ -56,7 +56,7 @@ test('owner suspends and restores a collaborator account', async ({
   await ownerPage.goto('/studio/collaboration')
   await expect(
     ownerPage.getByRole('tab', { name: '申请审核' }),
-  ).toBeVisible()
+  ).toHaveCount(0)
   await expect(
     ownerPage.getByRole('tab', { name: '邀请记录' }),
   ).toBeVisible()

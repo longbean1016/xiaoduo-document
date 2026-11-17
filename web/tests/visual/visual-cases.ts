@@ -18,7 +18,6 @@ export interface VisualCase {
   productionLogin: VisualRole
   overlay?: 'design-tokens'
   interaction?: 'open-library-sidebar' | 'open-public-search'
-    | 'open-collaboration-application'
     | 'open-version-history'
     | 'open-version-diff'
   searchQuery?: string
@@ -219,15 +218,6 @@ export const visualCases: VisualCase[] = [
     productionPath: '/collaborate/accept/visual-invite-token',
     productionLogin: null,
     maskSelectors: ['.invite-accept-page'],
-  },
-  {
-    id: 'collaboration-application-dialog',
-    prototypePath:
-      '/library/attention-and-writing/keep-thinking-on-paper',
-    productionPath:
-      '/library/attention-and-writing/keep-thinking-on-paper',
-    productionLogin: null,
-    interaction: 'open-collaboration-application',
   },
   {
     id: 'password-reset',
