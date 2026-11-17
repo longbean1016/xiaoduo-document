@@ -15,7 +15,23 @@ frontend/vite.config.d.ts
 *.key
 *.p12
 *.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.bak
 .npmrc
+
+secrets/
+*credential*.json
+*credentials*.json
+*service-account*.json
+.aws/
+.ssh/
 
 *.log
 *.tmp
