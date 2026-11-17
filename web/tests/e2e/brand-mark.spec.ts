@@ -73,3 +73,19 @@ test('public library and studio expose Xiaoduo titles and favicon', async ({
   await expect(page).toHaveURL(/\/studio$/)
   await expect(page).toHaveTitle('小多写作台')
 })
+
+test('Xiaoduo avatar source is high resolution and square', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const dimensions = await page.evaluate(async () => {
+    const image = new Image()
+    image.src = '/xiaoduo-mark.jpg'
+    await image.decode()
+    return { width: image.naturalWidth, height: image.naturalHeight }
+  })
+
+  expect(dimensions.width).toBeGreaterThanOrEqual(512)
+  expect(dimensions.height).toBeGreaterThanOrEqual(512)
+})
