@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: '按分类与章节组织的个人公开知识书',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const [profile, categories] = await Promise.all([
     getPublicSiteProfile(),
