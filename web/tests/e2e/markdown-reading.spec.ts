@@ -10,6 +10,8 @@ const readingMarkdown = `## 阅读渲染
 
 **公开粗体**
 
+*公开斜体*
+
 | 能力 | 状态 |
 | --- | --- |
 | 表格 | 支持 |
@@ -62,6 +64,15 @@ test('public reader renders rich Markdown, code and Mermaid', async ({
     article.getByRole('heading', { name: '阅读渲染' }),
   ).toBeVisible()
   await expect(article.locator('strong')).toHaveText('公开粗体')
+  const italic = article.locator('em')
+  await expect(italic).toHaveText('公开斜体')
+  await expect
+    .poll(() =>
+      italic.evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('font-synthesis'),
+      ),
+    )
+    .toBe('style')
   await expect(article.locator('table')).toContainText('支持')
   await expect(article.locator('pre code.language-java')).toBeVisible()
   await expect(article.locator('.hljs-keyword').first()).toBeVisible()

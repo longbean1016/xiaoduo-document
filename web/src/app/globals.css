@@ -2669,6 +2669,12 @@ select:focus {
   margin: 0;
 }
 
+.zhijian-prose em,
+.markdown-body em {
+  font-style: italic;
+  font-synthesis: style;
+}
+
 .zhijian-prose
   p:has(> br.ProseMirror-trailingBreak:only-child) {
   min-height: 0.8em;

@@ -160,7 +160,16 @@ test('italic Markdown renders at the beginning of a paragraph', async ({
   await body.click()
   await page.keyboard.type('*段首斜体*')
 
-  await expect(body.locator('em')).toHaveText('段首斜体')
+  const italic = body.locator('em')
+  await expect(italic).toHaveText('段首斜体')
+  await expect(italic).toHaveCSS('font-style', 'italic')
+  await expect
+    .poll(() =>
+      italic.evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('font-synthesis'),
+      ),
+    )
+    .toBe('style')
   await expect(body.locator('ul')).toHaveCount(0)
 
   await body.fill('')
