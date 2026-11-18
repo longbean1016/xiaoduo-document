@@ -18,6 +18,14 @@ export interface ImageUploadSigner {
   }): string
 }
 
+export interface ImageUploader {
+  put(input: {
+    objectKey: string
+    contentType: UploadableImageType
+    body: Uint8Array
+  }): Promise<void>
+}
+
 export interface ImageUploadTarget {
   objectKey: string
   uploadUrl: string
@@ -26,17 +34,20 @@ export interface ImageUploadTarget {
   expiresInSeconds: number
 }
 
-async function createScopedImageUploadTarget(
+export interface StoredImageUpload {
+  objectKey: string
+  publicUrl: string
+  contentType: UploadableImageType
+}
+
+function createScopedImageObject(
   input: {
     contentType: string
     objectPrefix: string
     size: number
   },
-  options: {
-    signer: ImageUploadSigner
-    publicBaseUrl: string
-  },
-): Promise<ImageUploadTarget> {
+  publicBaseUrl: string,
+): StoredImageUpload {
   if (!(input.contentType in IMAGE_EXTENSIONS)) {
     throw new Error('UNSUPPORTED_IMAGE_TYPE')
   }
@@ -53,13 +64,30 @@ async function createScopedImageUploadTarget(
   }`
   return {
     objectKey,
+    publicUrl: `${publicBaseUrl.replace(/\/+$/, '')}/${objectKey}`,
+    contentType,
+  }
+}
+
+async function createScopedImageUploadTarget(
+  input: {
+    contentType: string
+    objectPrefix: string
+    size: number
+  },
+  options: {
+    signer: ImageUploadSigner
+    publicBaseUrl: string
+  },
+): Promise<ImageUploadTarget> {
+  const image = createScopedImageObject(input, options.publicBaseUrl)
+  return {
+    ...image,
     uploadUrl: options.signer.sign({
-      objectKey,
-      contentType,
+      objectKey: image.objectKey,
+      contentType: image.contentType,
       expires: UPLOAD_EXPIRES_SECONDS,
     }),
-    publicUrl: `${options.publicBaseUrl.replace(/\/+$/, '')}/${objectKey}`,
-    contentType,
     expiresInSeconds: UPLOAD_EXPIRES_SECONDS,
   }
 }
@@ -85,25 +113,31 @@ export function createImageUploadTarget(
   )
 }
 
-export function createProfileImageUploadTarget(
+export async function uploadProfileImage(
   input: {
     userId: string
-    contentType: string
-    size: number
+    file: File
   },
   options: {
-    signer: ImageUploadSigner
+    uploader: ImageUploader
     publicBaseUrl: string
   },
-) {
-  return createScopedImageUploadTarget(
+): Promise<StoredImageUpload> {
+  const image = createScopedImageObject(
     {
-      contentType: input.contentType,
+      contentType: input.file.type,
       objectPrefix: `profiles/${input.userId}/avatar`,
-      size: input.size,
+      size: input.file.size,
     },
-    options,
+    options.publicBaseUrl,
   )
+  const body = new Uint8Array(await input.file.arrayBuffer())
+  await options.uploader.put({
+    objectKey: image.objectKey,
+    contentType: image.contentType,
+    body,
+  })
+  return image
 }
 
 export function createOssImageUploadConfiguration() {
@@ -140,5 +174,12 @@ export function createOssImageUploadConfiguration() {
         })
       },
     } satisfies ImageUploadSigner,
+    uploader: {
+      async put(input) {
+        await client.put(input.objectKey, Buffer.from(input.body), {
+          mime: input.contentType,
+        })
+      },
+    } satisfies ImageUploader,
   }
 }

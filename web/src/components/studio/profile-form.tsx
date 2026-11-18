@@ -53,39 +53,31 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     setMessage('')
     try {
       const image = await compressImageForUpload(file)
-      const signResponse = await fetch('/api/studio/profile/avatar', {
+      const extension = image.contentType === 'image/jpeg' ? 'jpg' : 'webp'
+      const formData = new FormData()
+      formData.append('file', image.blob, `avatar.${extension}`)
+      const uploadResponse = await fetch('/api/studio/profile/avatar', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          contentType: image.contentType,
-          size: image.blob.size,
-        }),
+        body: formData,
       })
-      const signPayload = (await signResponse.json()) as {
+      const uploadPayload = (await uploadResponse.json()) as {
         upload?: {
-          uploadUrl: string
           publicUrl: string
           contentType: string
         }
         error?: string
       }
-      if (!signResponse.ok || !signPayload.upload) {
+      if (!uploadResponse.ok || !uploadPayload.upload) {
         throw new Error(
-          signPayload.error === 'OSS_NOT_CONFIGURED'
+          uploadPayload.error === 'OSS_NOT_CONFIGURED'
             ? '对象存储尚未配置。'
-            : '无法创建头像上传地址。',
+            : uploadPayload.error === 'IMAGE_TOO_LARGE'
+              ? '头像图片过大，请重新选择。'
+              : '头像上传失败，请重试。',
         )
       }
 
-      const upload = signPayload.upload
-      const uploadResponse = await fetch(upload.uploadUrl, {
-        method: 'PUT',
-        headers: { 'content-type': upload.contentType },
-        body: image.blob,
-      })
-      if (!uploadResponse.ok) {
-        throw new Error('头像上传失败，请重试。')
-      }
+      const upload = uploadPayload.upload
       replaceAvatarPreview(upload.publicUrl)
       setValues((current) => ({
         ...current,
