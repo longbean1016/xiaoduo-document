@@ -20,11 +20,12 @@ export function BrandMark({
     >
       <span className="brand-mark-icon" aria-hidden="true">
         <Image
-          src="/xiaoduo-mark.jpg"
+          src="/xiaoduo-brand.webp"
           alt=""
-          width={40}
-          height={40}
-          sizes="36px"
+          width={512}
+          height={512}
+          sizes="96px"
+          unoptimized
           draggable={false}
         />
       </span>
