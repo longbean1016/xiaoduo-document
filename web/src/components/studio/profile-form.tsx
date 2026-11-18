@@ -39,7 +39,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     if (avatarPreviewRef.current) {
       URL.revokeObjectURL(avatarPreviewRef.current)
     }
-    avatarPreviewRef.current = url
+    avatarPreviewRef.current = url.startsWith('blob:') ? url : ''
     setAvatarPreviewUrl(url)
   }
 
@@ -53,8 +53,45 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     setMessage('')
     try {
       const image = await compressImageForUpload(file)
-      replaceAvatarPreview(URL.createObjectURL(image.blob))
-      setMessage('头像已在本地预览，对象存储接入后即可保存。')
+      const signResponse = await fetch('/api/studio/profile/avatar', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          contentType: image.contentType,
+          size: image.blob.size,
+        }),
+      })
+      const signPayload = (await signResponse.json()) as {
+        upload?: {
+          uploadUrl: string
+          publicUrl: string
+          contentType: string
+        }
+        error?: string
+      }
+      if (!signResponse.ok || !signPayload.upload) {
+        throw new Error(
+          signPayload.error === 'OSS_NOT_CONFIGURED'
+            ? '对象存储尚未配置。'
+            : '无法创建头像上传地址。',
+        )
+      }
+
+      const upload = signPayload.upload
+      const uploadResponse = await fetch(upload.uploadUrl, {
+        method: 'PUT',
+        headers: { 'content-type': upload.contentType },
+        body: image.blob,
+      })
+      if (!uploadResponse.ok) {
+        throw new Error('头像上传失败，请重试。')
+      }
+      replaceAvatarPreview(upload.publicUrl)
+      setValues((current) => ({
+        ...current,
+        avatarUrl: upload.publicUrl,
+      }))
+      setMessage('头像上传成功，保存资料后生效。')
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : '头像处理失败。',
@@ -82,18 +119,14 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     })
     setPending(false)
     setMessage(
-      response.ok
-        ? avatarPreviewUrl
-          ? '昵称已保存。本地头像将在对象存储接入后上传。'
-          : '资料已保存'
-        : '保存失败，请重试。',
+      response.ok ? '资料已保存' : '保存失败，请重试。',
     )
   }
 
   const messageIsSuccess =
     message.startsWith('昵称已保存') ||
     message === '资料已保存' ||
-    message.includes('本地预览') ||
+    message.includes('头像上传成功') ||
     message.includes('已移除')
 
   return (
@@ -115,7 +148,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
           />
           <div className="min-w-0 flex-1">
             <strong>头像</strong>
-            <p>从本地选择方形图片。对象存储接入前仅显示临时预览。</p>
+            <p>从本地选择方形图片，上传后保存资料即可生效。</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -128,7 +161,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
                 ) : (
                   <ImagePlus size={18} />
                 )}
-                选择本地头像
+                {avatarPending ? '正在上传…' : '选择本地头像'}
               </button>
               {avatarPreviewUrl || values.avatarUrl ? (
                 <button

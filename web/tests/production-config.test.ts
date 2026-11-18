@@ -20,6 +20,11 @@ describe('production deployment configuration', () => {
     expect(nginx).toContain('listen 443 ssl')
     expect(nginx).toContain('proxy_set_header X-Real-IP $remote_addr;')
     expect(nginx).toContain('proxy_pass http://web:3000;')
+
+    const dockerfile = await read('Dockerfile')
+    expect(dockerfile).toContain(
+      'COPY --from=builder --chown=nextjs:nodejs /app/public ./public',
+    )
   })
 
   it('documents the accepted no-backup and no-versioning risk', async () => {
