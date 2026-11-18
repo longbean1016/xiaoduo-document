@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { createImageUploadTarget } from '@/server/image-upload'
+import {
+  createImageUploadTarget,
+  createProfileImageUploadTarget,
+} from '@/server/image-upload'
 
 describe('image upload signing', () => {
   it('creates a scoped short-lived upload target for a compressed image', async () => {
@@ -65,5 +68,28 @@ describe('image upload signing', () => {
         { publicBaseUrl: 'https://cdn.example.com', signer },
       ),
     ).rejects.toThrow('IMAGE_TOO_LARGE')
+  })
+
+  it('scopes profile avatar uploads to the owner profile namespace', async () => {
+    const target = await createProfileImageUploadTarget(
+      {
+        userId: 'owner-1',
+        contentType: 'image/webp',
+        size: 20_000,
+      },
+      {
+        publicBaseUrl: 'https://cdn.example.com/',
+        signer: {
+          sign: () => 'https://bucket.example.com/profile-avatar',
+        },
+      },
+    )
+
+    expect(target.objectKey).toMatch(
+      /^profiles\/owner-1\/avatar\/[a-f0-9-]+\.webp$/,
+    )
+    expect(target.publicUrl).toBe(
+      `https://cdn.example.com/${target.objectKey}`,
+    )
   })
 })

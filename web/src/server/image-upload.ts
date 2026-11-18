@@ -26,10 +26,10 @@ export interface ImageUploadTarget {
   expiresInSeconds: number
 }
 
-export async function createImageUploadTarget(
+async function createScopedImageUploadTarget(
   input: {
-    articleId: string
     contentType: string
+    objectPrefix: string
     size: number
   },
   options: {
@@ -48,7 +48,7 @@ export async function createImageUploadTarget(
     throw new Error('IMAGE_TOO_LARGE')
   }
   const contentType = input.contentType as UploadableImageType
-  const objectKey = `notes/${input.articleId}/${randomUUID()}.${
+  const objectKey = `${input.objectPrefix}/${randomUUID()}.${
     IMAGE_EXTENSIONS[contentType]
   }`
   return {
@@ -62,6 +62,48 @@ export async function createImageUploadTarget(
     contentType,
     expiresInSeconds: UPLOAD_EXPIRES_SECONDS,
   }
+}
+
+export function createImageUploadTarget(
+  input: {
+    articleId: string
+    contentType: string
+    size: number
+  },
+  options: {
+    signer: ImageUploadSigner
+    publicBaseUrl: string
+  },
+) {
+  return createScopedImageUploadTarget(
+    {
+      contentType: input.contentType,
+      objectPrefix: `notes/${input.articleId}`,
+      size: input.size,
+    },
+    options,
+  )
+}
+
+export function createProfileImageUploadTarget(
+  input: {
+    userId: string
+    contentType: string
+    size: number
+  },
+  options: {
+    signer: ImageUploadSigner
+    publicBaseUrl: string
+  },
+) {
+  return createScopedImageUploadTarget(
+    {
+      contentType: input.contentType,
+      objectPrefix: `profiles/${input.userId}/avatar`,
+      size: input.size,
+    },
+    options,
+  )
 }
 
 export function createOssImageUploadConfiguration() {
