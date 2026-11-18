@@ -19,7 +19,10 @@ test('public library and studio use the Xiaoduo round portrait mark', async ({
   await expect(publicIcon).toHaveCSS('border-radius', '50%')
   await expect(publicIcon).toHaveCSS('width', '40px')
   const publicImage = publicIcon.locator('img')
-  await expect(publicImage).toHaveAttribute('src', /xiaoduo-brand\.webp/)
+  await expect(publicImage).toHaveAttribute(
+    'src',
+    /xiaoduo-brand-v2\.webp/,
+  )
   await expect
     .poll(() =>
       publicImage.evaluate((image) => {
@@ -97,7 +100,7 @@ test('Xiaoduo avatar source is high resolution and square', async ({
 
   const dimensions = await page.evaluate(async () => {
     const image = new Image()
-    image.src = '/xiaoduo-brand.webp'
+    image.src = '/xiaoduo-brand-v2.webp'
     await image.decode()
     return { width: image.naturalWidth, height: image.naturalHeight }
   })

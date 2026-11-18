@@ -12,7 +12,7 @@ describe('BrandMark', () => {
     expect(screen.queryByText('知笺')).not.toBeInTheDocument()
     expect(screen.queryByText('Zhijian')).not.toBeInTheDocument()
     expect(
-      container.querySelector('img[src*="xiaoduo-brand.webp"]'),
+      container.querySelector('img[src*="xiaoduo-brand-v2.webp"]'),
     ).toBeInTheDocument()
   })
 
