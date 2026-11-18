@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   createImageUploadTarget,
-  createProfileImageUploadTarget,
+  uploadProfileImage,
 } from '@/server/image-upload'
 
-describe('image upload signing', () => {
+describe('image upload', () => {
   it('creates a scoped short-lived upload target for a compressed image', async () => {
     const calls: Array<{
       objectKey: string
@@ -70,26 +70,40 @@ describe('image upload signing', () => {
     ).rejects.toThrow('IMAGE_TOO_LARGE')
   })
 
-  it('scopes profile avatar uploads to the owner profile namespace', async () => {
-    const target = await createProfileImageUploadTarget(
+  it('uploads a profile avatar through the server without exposing OSS credentials', async () => {
+    const bytes = new Uint8Array([1, 2, 3, 4])
+    const calls: Array<{
+      objectKey: string
+      contentType: string
+      body: Uint8Array
+    }> = []
+
+    const upload = await uploadProfileImage(
       {
         userId: 'owner-1',
-        contentType: 'image/webp',
-        size: 20_000,
+        file: new File([bytes], 'avatar.webp', { type: 'image/webp' }),
       },
       {
         publicBaseUrl: 'https://cdn.example.com/',
-        signer: {
-          sign: () => 'https://bucket.example.com/profile-avatar',
+        uploader: {
+          async put(input) {
+            calls.push(input)
+          },
         },
       },
     )
 
-    expect(target.objectKey).toMatch(
+    expect(upload.objectKey).toMatch(
       /^profiles\/owner-1\/avatar\/[a-f0-9-]+\.webp$/,
     )
-    expect(target.publicUrl).toBe(
-      `https://cdn.example.com/${target.objectKey}`,
+    expect(upload.publicUrl).toBe(
+      `https://cdn.example.com/${upload.objectKey}`,
     )
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toMatchObject({
+      objectKey: upload.objectKey,
+      contentType: 'image/webp',
+    })
+    expect(Buffer.from(calls[0].body)).toEqual(Buffer.from(bytes))
   })
 })

@@ -1,22 +1,25 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
 import { authorizeOwnerMutation } from '@/lib/studio-request'
 import {
   createOssImageUploadConfiguration,
-  createProfileImageUploadTarget,
+  uploadProfileImage,
 } from '@/server/image-upload'
-
-const schema = z.object({
-  contentType: z.string().min(1).max(100),
-  size: z.number().int().positive(),
-})
 
 export async function POST(request: Request) {
   const authorization = await authorizeOwnerMutation(request)
   if (authorization.error) return authorization.error
 
-  const parsed = schema.safeParse(await request.json())
-  if (!parsed.success) {
+  let formData: FormData
+  try {
+    formData = await request.formData()
+  } catch {
+    return NextResponse.json(
+      { error: 'INVALID_IMAGE_UPLOAD' },
+      { status: 400 },
+    )
+  }
+  const file = formData.get('file')
+  if (!(file instanceof File)) {
     return NextResponse.json(
       { error: 'INVALID_IMAGE_UPLOAD' },
       { status: 400 },
@@ -32,19 +35,31 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upload = await createProfileImageUploadTarget(
+    const upload = await uploadProfileImage(
       {
         userId: authorization.session.user.id,
-        ...parsed.data,
+        file,
       },
       configuration,
     )
     return NextResponse.json({ upload }, { status: 201 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : 'UPLOAD_FAILED'
+    const rawCode = error instanceof Error ? error.message : 'UPLOAD_FAILED'
+    const code =
+      rawCode === 'UNSUPPORTED_IMAGE_TYPE' ||
+      rawCode === 'IMAGE_TOO_LARGE'
+        ? rawCode
+        : 'UPLOAD_FAILED'
     return NextResponse.json(
       { error: code },
-      { status: code === 'IMAGE_TOO_LARGE' ? 413 : 415 },
+      {
+        status:
+          code === 'IMAGE_TOO_LARGE'
+            ? 413
+            : code === 'UNSUPPORTED_IMAGE_TYPE'
+              ? 415
+              : 502,
+      },
     )
   }
 }

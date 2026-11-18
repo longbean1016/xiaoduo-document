@@ -1,7 +1,6 @@
 import './database-isolation'
 import { expect, test } from '@playwright/test'
 import sharp from 'sharp'
-import { appOrigin } from './app-origin'
 import { seedTestDatabase } from '../seed-test-db'
 
 test.beforeEach(async () => {
@@ -45,20 +44,6 @@ test('owner uploads an avatar and saves the author name', async ({
     await expect(page.getByLabel(hiddenLabel)).toHaveCount(0)
   }
 
-  await page.route(
-    'https://test-bucket.oss-cn-hangzhou.aliyuncs.com/**',
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        body: '',
-        headers: {
-          'access-control-allow-origin': appOrigin,
-          'access-control-allow-methods': 'PUT',
-          'access-control-allow-headers': 'content-type',
-        },
-      })
-    },
-  )
   await page.route('https://cdn.example.com/**', async (route) => {
     await route.fulfill({
       status: 200,
@@ -69,14 +54,37 @@ test('owner uploads an avatar and saves the author name', async ({
 
   const avatarInput = page.getByLabel('选择本地头像')
   const preview = page.locator('.studio-profile-avatar-section img')
-  const uploadResponsePromise = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'PUT' &&
-      response.url().startsWith(
+  const publicUrl =
+    'https://cdn.example.com/profiles/owner-1/avatar/test-avatar.webp'
+  let uploadContentType = ''
+  let uploadBytes = 0
+  let directOssUpload = false
+  page.on('request', (request) => {
+    if (
+      request.method() === 'PUT' &&
+      request.url().startsWith(
         'https://test-bucket.oss-cn-hangzhou.aliyuncs.com/',
-      ),
-  )
-  const [signResponse] = await Promise.all([
+      )
+    ) {
+      directOssUpload = true
+    }
+  })
+  await page.route('**/api/studio/profile/avatar', async (route) => {
+    uploadContentType = route.request().headers()['content-type'] ?? ''
+    uploadBytes = route.request().postDataBuffer()?.length ?? 0
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        upload: {
+          objectKey: 'profiles/owner-1/avatar/test-avatar.webp',
+          publicUrl,
+          contentType: 'image/webp',
+        },
+      }),
+    })
+  })
+  const [uploadResponse] = await Promise.all([
     page.waitForResponse((response) =>
       response.url().endsWith('/api/studio/profile/avatar'),
     ),
@@ -86,23 +94,14 @@ test('owner uploads an avatar and saves the author name', async ({
       buffer: onePixelPng,
     }),
   ])
-  expect(signResponse.status()).toBe(201)
-  const signPayload = (await signResponse.json()) as {
-    upload: {
-      uploadUrl: string
-      publicUrl: string
-      contentType: string
-    }
-  }
-  expect(JSON.stringify(signPayload)).not.toContain('test-access-secret')
-  await uploadResponsePromise
+  expect(uploadResponse.status()).toBe(201)
+  expect(uploadContentType).toContain('multipart/form-data')
+  expect(uploadBytes).toBeGreaterThan(0)
+  expect(directOssUpload).toBe(false)
   await expect(
     page.getByText('头像上传成功，保存资料后生效。'),
   ).toBeVisible()
-  await expect(preview).toHaveAttribute(
-    'src',
-    signPayload.upload.publicUrl,
-  )
+  await expect(preview).toHaveAttribute('src', publicUrl)
 
   await page.getByRole('button', { name: '移除头像' }).click()
   const removeDialog = page.getByRole('alertdialog', {
@@ -131,14 +130,20 @@ test('owner uploads an avatar and saves the author name', async ({
   await expect(preview).toBeVisible()
 })
 
-test('profile avatar signing requires the owner and a trusted origin', async ({
+test('profile avatar upload requires the owner and a trusted origin', async ({
   page,
   request,
 }) => {
-  const payload = { contentType: 'image/webp', size: 20_000 }
+  const payload = {
+    file: {
+      name: 'avatar.webp',
+      mimeType: 'image/webp',
+      buffer: Buffer.from([1, 2, 3, 4]),
+    },
+  }
 
   const anonymous = await request.post('/api/studio/profile/avatar', {
-    data: payload,
+    multipart: payload,
   })
   expect(anonymous.status()).toBe(403)
 
@@ -152,7 +157,7 @@ test('profile avatar signing requires the owner and a trusted origin', async ({
   const invalidOrigin = await page.request.post(
     '/api/studio/profile/avatar',
     {
-      data: payload,
+      multipart: payload,
       headers: { origin: 'https://invalid.example.com' },
     },
   )
