@@ -106,7 +106,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
     ...chapter.contributors.map((contributor) => ({
       id: contributor.id,
       name: contributor.name,
-      avatarUrl: undefined,
+      avatarUrl: contributor.avatarUrl,
     })),
   ]
 

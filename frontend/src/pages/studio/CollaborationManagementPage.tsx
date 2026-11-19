@@ -14,6 +14,7 @@ import {
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Dialog } from '../../components/ui/Dialog'
+import { AuthorAvatar } from '../../components/AuthorAvatar'
 import { formatDateTime, formatRelativeTime } from '../../lib/text'
 import { usePageTitle } from '../../lib/usePageTitle'
 import { cn } from '../../lib/utils'
@@ -400,9 +401,11 @@ export function CollaborationManagementPage() {
           <div className="collaboration-list">
             {collaborators.map((collaborator) => (
               <article key={collaborator.id} className="collaborator-row">
-                <span className="collaborator-avatar">
-                  {collaborator.displayName.slice(0, 2)}
-                </span>
+                <AuthorAvatar
+                  name={collaborator.displayName}
+                  avatarUrl={collaborator.avatarUrl}
+                  size="md"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <strong>{collaborator.displayName}</strong>

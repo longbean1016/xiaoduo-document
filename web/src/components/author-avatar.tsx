@@ -12,7 +12,12 @@ export function AuthorAvatar({
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }) {
-  const classes = cn('author-avatar', `is-${size}`, className)
+  const classes = cn(
+    'author-avatar',
+    `is-${size}`,
+    avatarUrl && 'has-image',
+    className,
+  )
   return (
     <span className={classes} aria-label={`${name}的头像`}>
       {avatarUrl ? (

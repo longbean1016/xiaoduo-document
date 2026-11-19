@@ -8,6 +8,7 @@ export interface Collaborator {
   id: string
   email: string
   displayName: string
+  avatarUrl?: string
   passwordHash: string
   noteIds: string[]
   status: 'active' | 'suspended'
