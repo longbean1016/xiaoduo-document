@@ -64,7 +64,7 @@ export function StudioSettingsPage() {
           <AuthorAvatar
             name={name || author.name}
             avatarUrl={avatarUrl}
-            size="lg"
+            size="md"
           />
           <div className="min-w-0 flex-1">
             <strong>头像</strong>

@@ -16,7 +16,13 @@ interface ProfileValues {
   email: string
 }
 
-export function ProfileForm({ initial }: { initial: ProfileValues }) {
+export function ProfileForm({
+  initial,
+  mode = 'owner',
+}: {
+  initial: ProfileValues
+  mode?: 'owner' | 'collaborator'
+}) {
   const [values, setValues] = useState(initial)
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
@@ -127,7 +133,11 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         <div>
           <p className="section-kicker">Author profile</p>
           <h1>个人资料</h1>
-          <p>昵称和头像会展示在公开章节的作者信息中。</p>
+          <p>
+            {mode === 'owner'
+              ? '昵称和头像会展示在公开章节的作者信息中。'
+              : '昵称和头像会用于写作台中的个人标识。'}
+          </p>
         </div>
       </header>
 
@@ -136,7 +146,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
           <AuthorAvatar
             name={values.authorName || '作者'}
             avatarUrl={avatarPreviewUrl || values.avatarUrl}
-            size="lg"
+            size="md"
           />
           <div className="min-w-0 flex-1">
             <strong>头像</strong>

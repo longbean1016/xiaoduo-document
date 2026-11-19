@@ -1,7 +1,9 @@
 import './database-isolation'
 import { expect, test } from '@playwright/test'
 import sharp from 'sharp'
+import { createTestConnection } from '../test-db'
 import { seedTestDatabase } from '../seed-test-db'
+import { loginAsCollaborator } from './login-as-collaborator'
 
 test.beforeEach(async () => {
   await seedTestDatabase()
@@ -130,7 +132,7 @@ test('owner uploads an avatar and saves the author name', async ({
   await expect(preview).toBeVisible()
 })
 
-test('profile avatar upload requires the owner and a trusted origin', async ({
+test('profile avatar upload requires an active studio session and trusted origin', async ({
   page,
   request,
 }) => {
@@ -162,4 +164,109 @@ test('profile avatar upload requires the owner and a trusted origin', async ({
     },
   )
   expect(invalidOrigin.status()).toBe(403)
+})
+
+test('collaborator updates only their own name and avatar', async ({
+  page,
+}) => {
+  const connection = await createTestConnection()
+  try {
+    await connection.query(
+      `INSERT INTO auth_user (
+        id, name, email, email_verified, role, status, created_at, updated_at
+      ) VALUES (
+        'collaborator-profile', '协作者原名', 'profile@example.com', true,
+        'collaborator', 'active', NOW(3), NOW(3)
+      )`,
+    )
+    await connection.query(
+      `INSERT INTO article_grant (user_id, article_id, created_at)
+       VALUES ('collaborator-profile', 'article-1', NOW(3))`,
+    )
+  } finally {
+    await connection.end()
+  }
+
+  await loginAsCollaborator(page, 'profile@example.com')
+  const profileLink = page.getByRole('link', { name: '个人资料' })
+  await expect(profileLink).toBeVisible()
+  await profileLink.click()
+  await expect(page).toHaveURL(/\/studio\/settings$/)
+
+  const avatarInput = page.getByLabel('选择本地头像')
+  await expect(
+    page.getByRole('button', { name: '选择本地头像' }),
+  ).toBeVisible()
+  await page.route('https://cdn.example.com/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: onePixelPng,
+    })
+  })
+
+  const publicUrl =
+    'https://cdn.example.com/profiles/collaborator-profile/avatar/test.webp'
+  await page.route('**/api/studio/profile/avatar', async (route) => {
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        upload: {
+          objectKey: 'profiles/collaborator-profile/avatar/test.webp',
+          publicUrl,
+          contentType: 'image/webp',
+        },
+      }),
+    })
+  })
+
+  const invalidUpload = await page.request.post(
+    '/api/studio/profile/avatar',
+    {
+      multipart: {},
+      headers: { origin: 'http://127.0.0.1:3101' },
+    },
+  )
+  expect(invalidUpload.status()).toBe(400)
+
+  await avatarInput.setInputFiles({
+    name: 'avatar.png',
+    mimeType: 'image/png',
+    buffer: onePixelPng,
+  })
+  await expect(
+    page.getByText('头像上传成功，保存资料后生效。'),
+  ).toBeVisible()
+  await page.getByLabel('作者昵称').fill('协作者新名')
+  await page.getByRole('button', { name: '保存资料' }).click()
+  await expect(page.getByText('资料已保存')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByLabel('作者昵称')).toHaveValue('协作者新名')
+  await expect(
+    page.locator('.studio-profile-avatar-section img'),
+  ).toHaveAttribute('src', publicUrl)
+  await expect(
+    page.locator('.studio-sidebar').getByText('协作者新名', { exact: true }),
+  ).toBeVisible()
+
+  const verify = await createTestConnection()
+  try {
+    const [users] = await verify.query(
+      `SELECT name, image FROM auth_user WHERE id = 'collaborator-profile'`,
+    )
+    expect((users as Array<Record<string, unknown>>)[0]).toMatchObject({
+      name: '协作者新名',
+      image: publicUrl,
+    })
+    const [profiles] = await verify.query(
+      `SELECT author_name FROM site_profile WHERE id = 'primary'`,
+    )
+    expect((profiles as Array<Record<string, unknown>>)[0]).toMatchObject({
+      author_name: '小多',
+    })
+  } finally {
+    await verify.end()
+  }
 })

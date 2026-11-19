@@ -133,6 +133,12 @@ export function StudioShell({
               label="回收"
               pathname={pathname}
             />
+            <StudioMobileNav
+              to="/studio/settings"
+              icon={<Settings size={19} />}
+              label="资料"
+              pathname={pathname}
+            />
             {isOwner ? (
               <>
                 <StudioMobileNav
@@ -151,12 +157,6 @@ export function StudioShell({
                   to="/studio/categories"
                   icon={<FolderTree size={19} />}
                   label="分类"
-                  pathname={pathname}
-                />
-                <StudioMobileNav
-                  to="/studio/settings"
-                  icon={<Settings size={19} />}
-                  label="资料"
                   pathname={pathname}
                 />
                 <StudioMobileNav
@@ -213,6 +213,13 @@ export function StudioShell({
           >
             回收站
           </StudioNav>
+          <StudioNav
+            to="/studio/settings"
+            icon={<Settings size={19} />}
+            pathname={pathname}
+          >
+            个人资料
+          </StudioNav>
           {isOwner ? (
             <>
               <StudioNav
@@ -236,13 +243,6 @@ export function StudioShell({
                 pathname={pathname}
               >
                 分类管理
-              </StudioNav>
-              <StudioNav
-                to="/studio/settings"
-                icon={<Settings size={19} />}
-                pathname={pathname}
-              >
-                个人资料
               </StudioNav>
             </>
           ) : null}

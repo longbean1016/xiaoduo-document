@@ -200,6 +200,9 @@ export function ChapterEditor({
   const editorRef = useRef<Editor | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const markdownInputRef = useRef<HTMLInputElement>(null)
+  const uploadImageFileRef = useRef<(file: File) => Promise<void>>(
+    async () => {},
+  )
   const workspaceRef = useRef<HTMLDivElement | null>(null)
   const tocLockRef = useRef(false)
   const tocTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -293,8 +296,28 @@ export function ChapterEditor({
       }, 80)
     }
     editor.on('update', onUpdate)
+    const editorDom = editor.view.dom
+    const onPaste = (event: ClipboardEvent) => {
+      const clipboard = event.clipboardData
+      if (!clipboard) return
+      const imageItem = Array.from(clipboard.items).find(
+        (item) =>
+          item.kind === 'file' && item.type.startsWith('image/'),
+      )
+      const imageFile =
+        imageItem?.getAsFile() ??
+        Array.from(clipboard.files).find((file) =>
+          file.type.startsWith('image/'),
+        )
+      if (!imageFile) return
+      event.preventDefault()
+      event.stopPropagation()
+      void uploadImageFileRef.current(imageFile)
+    }
+    editorDom.addEventListener('paste', onPaste, true)
     return () => {
       editor.off('update', onUpdate)
+      editorDom.removeEventListener('paste', onPaste, true)
       if (normalizeTimerRef.current) {
         clearTimeout(normalizeTimerRef.current)
       }
@@ -580,64 +603,76 @@ export function ChapterEditor({
     setFocusMessage(found ? '已定位到当前草稿' : '当前草稿中未找到对应位置')
   }
 
+  const uploadImageFile = useCallback(
+    async (file: File) => {
+      if (!file || !editor) return
+      setImageBusy(true)
+      setImageMessage('')
+      try {
+        const compressed = await compressImageForUpload(file)
+        const response = await fetch(
+          `/api/studio/articles/${article.id}/images`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              contentType: compressed.contentType,
+              size: compressed.blob.size,
+            }),
+          },
+        )
+        const payload = (await response.json()) as {
+          upload?: {
+            uploadUrl: string
+            publicUrl: string
+            contentType: string
+          }
+          error?: string
+        }
+        if (!response.ok || !payload.upload) {
+          throw new Error(
+            payload.error === 'OSS_NOT_CONFIGURED'
+              ? '图片存储尚未配置'
+              : '图片签名失败',
+          )
+        }
+        const uploadResponse = await fetch(payload.upload.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': payload.upload.contentType },
+          body: compressed.blob,
+        })
+        if (!uploadResponse.ok) throw new Error('图片上传失败，请重试')
+        editor
+          .chain()
+          .focus()
+          .setImage({
+            src: payload.upload.publicUrl,
+            alt: file.name,
+            title: file.name,
+          })
+          .run()
+        setImageMessage('图片已插入')
+      } catch (error) {
+        setImageMessage(
+          error instanceof Error ? error.message : '图片插入失败',
+        )
+      } finally {
+        setImageBusy(false)
+      }
+    },
+    [article.id, editor],
+  )
+
   async function uploadImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
-    if (!file || !editor) return
-    setImageBusy(true)
-    setImageMessage('')
-    try {
-      const compressed = await compressImageForUpload(file)
-      const response = await fetch(
-        `/api/studio/articles/${article.id}/images`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            contentType: compressed.contentType,
-            size: compressed.blob.size,
-          }),
-        },
-      )
-      const payload = (await response.json()) as {
-        upload?: {
-          uploadUrl: string
-          publicUrl: string
-          contentType: string
-        }
-        error?: string
-      }
-      if (!response.ok || !payload.upload) {
-        throw new Error(
-          payload.error === 'OSS_NOT_CONFIGURED'
-            ? '图片存储尚未配置'
-            : '图片签名失败',
-        )
-      }
-      const uploadResponse = await fetch(payload.upload.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': payload.upload.contentType },
-        body: compressed.blob,
-      })
-      if (!uploadResponse.ok) throw new Error('图片上传失败，请重试')
-      editor
-        .chain()
-        .focus()
-        .setImage({
-          src: payload.upload.publicUrl,
-          alt: file.name,
-          title: file.name,
-        })
-        .run()
-      setImageMessage('图片已插入')
-    } catch (error) {
-      setImageMessage(
-        error instanceof Error ? error.message : '图片插入失败',
-      )
-    } finally {
-      setImageBusy(false)
-    }
+    if (!file) return
+    await uploadImageFile(file)
   }
+
+  useEffect(() => {
+    uploadImageFileRef.current = uploadImageFile
+  }, [uploadImageFile])
 
   async function publish() {
     if (!titleRef.current.trim()) {

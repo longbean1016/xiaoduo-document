@@ -154,6 +154,9 @@ export function StudioNotePage() {
   const saveTimerRef = useRef<number | null>(null)
   const saveNowRef = useRef<() => boolean>(() => false)
   const editorRef = useRef<Editor | null>(null)
+  const insertImageFileRef = useRef<(file: File) => Promise<void>>(
+    async () => {},
+  )
   const imageInputRef = useRef<HTMLInputElement>(null)
   const markdownInputRef = useRef<HTMLInputElement>(null)
   const draftPaneRef = useRef<HTMLElement | null>(null)
@@ -294,7 +297,32 @@ export function StudioNotePage() {
 
   useEffect(() => {
     editorRef.current = editor
+    if (!editor) {
+      return () => {
+        editorRef.current = null
+      }
+    }
+    const editorDom = editor.view.dom
+    const onPaste = (event: ClipboardEvent) => {
+      const clipboard = event.clipboardData
+      if (!clipboard) return
+      const imageItem = Array.from(clipboard.items).find(
+        (item) =>
+          item.kind === 'file' && item.type.startsWith('image/'),
+      )
+      const imageFile =
+        imageItem?.getAsFile() ??
+        Array.from(clipboard.files).find((file) =>
+          file.type.startsWith('image/'),
+        )
+      if (!imageFile) return
+      event.preventDefault()
+      event.stopPropagation()
+      void insertImageFileRef.current(imageFile)
+    }
+    editorDom.addEventListener('paste', onPaste, true)
     return () => {
+      editorDom.removeEventListener('paste', onPaste, true)
       editorRef.current = null
     }
   }, [editor])
@@ -554,33 +582,46 @@ export function StudioNotePage() {
     toast.success('版本已恢复到当前草稿')
   }
 
+  const insertImageFile = useCallback(
+    async (file: File) => {
+      const currentEditor = editorRef.current
+      if (!currentEditor) return
+      setImageBusy(true)
+      try {
+        const image = await compressImageFile(file)
+        currentEditor
+          .chain()
+          .focus()
+          .insertContent({
+            type: 'image',
+            attrs: {
+              src: image.dataUrl,
+              alt: file.name,
+              title: file.name,
+              publicUrl: image.publicUrl,
+            },
+          })
+          .run()
+        toast.success('图片已插入')
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : '图片插入失败')
+      } finally {
+        setImageBusy(false)
+      }
+    },
+    [],
+  )
+
   const insertImage = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
-    setImageBusy(true)
-    try {
-      const image = await compressImageFile(file)
-      editor
-        ?.chain()
-        .focus()
-        .insertContent({
-          type: 'image',
-          attrs: {
-            src: image.dataUrl,
-            alt: file.name,
-            title: file.name,
-            publicUrl: image.publicUrl,
-          },
-        })
-        .run()
-      toast.success('图片已插入')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : '图片插入失败')
-    } finally {
-      setImageBusy(false)
-    }
+    await insertImageFile(file)
   }
+
+  useEffect(() => {
+    insertImageFileRef.current = insertImageFile
+  }, [insertImageFile])
 
   const handleMarkdownImport = async (event: ChangeEvent<HTMLInputElement>) => {
     if (!isOwner) {

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import { authorizeOwnerMutation } from '@/lib/studio-request'
+import { authorizeStudioMutation } from '@/lib/studio-request'
 import {
   createOssImageUploadConfiguration,
   uploadProfileImage,
 } from '@/server/image-upload'
 
 export async function POST(request: Request) {
-  const authorization = await authorizeOwnerMutation(request)
+  const authorization = await authorizeStudioMutation(request)
   if (authorization.error) return authorization.error
 
   let formData: FormData

@@ -21,6 +21,7 @@ export function AuthorAvatar({
         alt={`${name}的头像`}
         width={size === 'lg' ? 76 : size === 'md' ? 40 : 32}
         height={size === 'lg' ? 76 : size === 'md' ? 40 : 32}
+        style={{ objectPosition: '50% 45%' }}
         unoptimized
       />
     )
