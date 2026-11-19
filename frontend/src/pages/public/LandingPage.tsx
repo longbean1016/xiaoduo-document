@@ -29,7 +29,7 @@ export function LandingPage() {
     <main className="landing-page">
       <header className="landing-header">
         <Link to="/" aria-label="知笺首页">
-          <BrandMark />
+          <BrandMark avatarUrl={author.avatarUrl} />
         </Link>
         <div className="flex items-center gap-2">
           <ThemePicker className="landing-icon-button" iconSize={21} />

@@ -81,7 +81,7 @@ export function StudioLayout() {
     <div className="studio-shell">
       {!isEditor && (
         <div className="studio-mobile-bar">
-          <BrandMark compact />
+          <BrandMark compact avatarUrl={author.avatarUrl} />
           <nav aria-label="写作台导航">
             <StudioMobileNav to="/studio" end icon={<FileText size={19} />}>
               内容
@@ -136,7 +136,7 @@ export function StudioLayout() {
       )}
       <aside className="studio-sidebar">
         <div className="px-5 pb-5 pt-5">
-          <BrandMark />
+          <BrandMark avatarUrl={author.avatarUrl} />
           <p className="mt-2 text-[12px] tracking-[0.18em] text-[var(--muted-faint)] uppercase">
             Writing studio
           </p>
