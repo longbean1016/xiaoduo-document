@@ -29,7 +29,7 @@ export default async function ProtectedStudioLayout({
           ? (profile?.authorName ?? session.user.name)
           : session.user.name
       }
-      avatarUrl={isOwner ? profile?.avatarUrl : null}
+      avatarUrl={isOwner ? profile?.avatarUrl : session.user.image}
       categories={categories}
     >
       {children}

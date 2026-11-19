@@ -2,8 +2,8 @@ import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/db/client'
-import { siteProfile } from '@/db/schema'
-import { requireOwner } from '@/lib/server-session'
+import { siteProfile, user } from '@/db/schema'
+import { requireStudioSession } from '@/lib/server-session'
 
 const profileSchema = z.object({
   authorName: z.string().trim().min(1).max(120),
@@ -21,7 +21,7 @@ function hasTrustedOrigin(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const session = await requireOwner()
+  const session = await requireStudioSession()
   if (!session) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
@@ -37,14 +37,25 @@ export async function PUT(request: Request) {
     )
   }
 
-  await db
-    .update(siteProfile)
-    .set({
-      ...parsed.data,
-      avatarUrl: parsed.data.avatarUrl || null,
-      updatedAt: new Date(),
-    })
-    .where(eq(siteProfile.id, 'primary'))
+  if (session.user.role === 'owner') {
+    await db
+      .update(siteProfile)
+      .set({
+        ...parsed.data,
+        avatarUrl: parsed.data.avatarUrl || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(siteProfile.id, 'primary'))
+  } else {
+    await db
+      .update(user)
+      .set({
+        name: parsed.data.authorName,
+        image: parsed.data.avatarUrl || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, session.user.id))
+  }
 
   return NextResponse.json({ saved: true })
 }
