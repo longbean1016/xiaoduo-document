@@ -27,11 +27,9 @@ function decodedPathname(pathname: string) {
 
 export function PublicLibraryShell({
   categories,
-  avatarUrl,
   children,
 }: {
   categories: PublicCategory[]
-  avatarUrl?: string | null
   children: ReactNode
 }) {
   const pathname = decodedPathname(usePathname())
@@ -126,7 +124,7 @@ export function PublicLibraryShell({
           aria-label="小多笔记首页"
           onClick={() => setSidebarOpen(false)}
         >
-          <BrandMark avatarUrl={avatarUrl} />
+          <BrandMark />
         </Link>
         <div className="ml-auto flex items-center gap-1">
           <button

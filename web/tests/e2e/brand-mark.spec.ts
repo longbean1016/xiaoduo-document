@@ -110,42 +110,6 @@ test('Xiaoduo avatar source is high resolution and square', async ({
   expect(dimensions.height).toBeGreaterThanOrEqual(512)
 })
 
-test('uploaded profile avatar is reused by public and studio brand marks', async ({
-  page,
-}) => {
-  const avatarUrl = '/xiaoduo-mark.jpg'
-  const connection = await createTestConnection()
-  try {
-    await connection.query(
-      `UPDATE site_profile SET avatar_url = ? WHERE id = 'primary'`,
-      [avatarUrl],
-    )
-  } finally {
-    await connection.end()
-  }
-
-  await page.goto('/library')
-  await expect(
-    page.locator('.library-brand .brand-mark-icon img'),
-  ).toHaveAttribute('src', avatarUrl)
-
-  await page.goto('/studio/login')
-  await page.getByRole('button', { name: '站主密码登录' }).click()
-  await page.getByLabel('邮箱').fill('owner@example.com')
-  await page.getByLabel('密码').fill('owner-test-password')
-  await page.getByRole('button', { name: '进入写作台' }).click()
-  await expect(page).toHaveURL(/\/studio$/)
-
-  await expect(
-    page.locator('.studio-sidebar .brand-mark-icon img'),
-  ).toHaveAttribute('src', avatarUrl)
-
-  await page.goto('/studio/settings')
-  await expect(
-    page.locator('.studio-profile-avatar-section img'),
-  ).toHaveAttribute('src', avatarUrl)
-})
-
 test('author and profile avatars use the brand icon framing', async ({
   page,
 }) => {
@@ -194,6 +158,10 @@ test('author and profile avatars use the brand icon framing', async ({
   await expect(profileFrame).toHaveCSS('width', '40px')
   await expect(profileFrame).toHaveCSS('height', '40px')
   await expect(profileFrame).toHaveCSS('border-radius', '50%')
+  await expect(profileFrame).toHaveCSS(
+    'border-color',
+    'rgba(0, 0, 0, 0)',
+  )
   await expect(profileImage).toHaveCount(1)
   await expect(profileImage).toHaveCSS('width', '38px')
   await expect(profileImage).toHaveCSS('height', '38px')

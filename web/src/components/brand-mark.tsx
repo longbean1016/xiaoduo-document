@@ -3,17 +3,13 @@ import { cn } from '@/lib/utils'
 
 export function BrandMark({
   label = '小多笔记',
-  avatarUrl,
   compact = false,
   className,
 }: {
   label?: string
-  avatarUrl?: string | null
   compact?: boolean
   className?: string
 }) {
-  const iconSrc = avatarUrl?.trim() || '/xiaoduo-brand-v2.webp'
-
   return (
     <div
       className={cn(
@@ -24,7 +20,7 @@ export function BrandMark({
     >
       <span className="brand-mark-icon" aria-hidden="true">
         <Image
-          src={iconSrc}
+          src="/xiaoduo-brand-v2.webp"
           alt=""
           width={512}
           height={512}
