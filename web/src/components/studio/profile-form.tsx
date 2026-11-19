@@ -4,7 +4,7 @@ import { ImagePlus, LoaderCircle, Save, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { AuthorAvatar } from '@/components/author-avatar'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { compressImageForUpload } from '@/lib/image-compression'
+import { compressAvatarForUpload } from '@/lib/image-compression'
 
 interface ProfileValues {
   authorName: string
@@ -58,7 +58,7 @@ export function ProfileForm({
     setAvatarPending(true)
     setMessage('')
     try {
-      const image = await compressImageForUpload(file)
+      const image = await compressAvatarForUpload(file)
       const extension = image.contentType === 'image/jpeg' ? 'jpg' : 'webp'
       const formData = new FormData()
       formData.append('file', image.blob, `avatar.${extension}`)

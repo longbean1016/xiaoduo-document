@@ -38,14 +38,12 @@ export function StudioShell({
   role,
   currentName,
   avatarUrl,
-  brandAvatarUrl,
   categories,
 }: {
   children: React.ReactNode
   role: 'owner' | 'collaborator'
   currentName: string
   avatarUrl?: string | null
-  brandAvatarUrl?: string | null
   categories: CategoryItem[]
 }) {
   const pathname = usePathname()
@@ -120,11 +118,7 @@ export function StudioShell({
       ) : null}
       {!isEditor ? (
         <div className="studio-mobile-bar">
-          <BrandMark
-            compact
-            label="小多写作台"
-            avatarUrl={brandAvatarUrl}
-          />
+          <BrandMark compact label="小多写作台" />
           <nav aria-label="写作台导航">
             <StudioMobileNav
               to="/studio"
@@ -187,10 +181,7 @@ export function StudioShell({
 
       <aside className="studio-sidebar">
         <div className="px-5 pb-5 pt-5">
-          <BrandMark
-            label="小多写作台"
-            avatarUrl={brandAvatarUrl}
-          />
+          <BrandMark label="小多写作台" />
         </div>
 
         {isOwner ? (

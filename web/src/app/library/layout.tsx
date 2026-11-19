@@ -1,23 +1,14 @@
 import { PublicLibraryShell } from '@/components/public-library-shell'
-import {
-  getPublicSiteProfile,
-  listPublicLibrary,
-} from '@/lib/public-library'
+import { listPublicLibrary } from '@/lib/public-library'
 
 export const dynamic = 'force-dynamic'
 
 export default async function LibraryLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [library, profile] = await Promise.all([
-    listPublicLibrary(),
-    getPublicSiteProfile(),
-  ])
+  const library = await listPublicLibrary()
   return (
-    <PublicLibraryShell
-      categories={library}
-      avatarUrl={profile?.avatarUrl}
-    >
+    <PublicLibraryShell categories={library}>
       {children}
     </PublicLibraryShell>
   )

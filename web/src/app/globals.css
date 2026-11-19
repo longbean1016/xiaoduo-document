@@ -5952,6 +5952,11 @@ button.markdown-diff-change-item.is-active {
   padding: 22px;
 }
 
+.studio-profile-avatar-section .author-avatar {
+  border-color: transparent;
+  background: var(--field);
+}
+
 .studio-profile-avatar-section strong {
   color: var(--ink);
   font-size: 15px;
