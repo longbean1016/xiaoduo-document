@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
-  AlignLeft,
   ArrowLeft,
   ArrowRight,
   ChevronRight,
   Clock3,
   Eye,
   Home,
+  Type,
   UserRound,
   UserRoundPlus,
 } from 'lucide-react'
@@ -207,7 +207,7 @@ export function NotePage() {
               </span>
               <span className="chapter-byline-dot" aria-hidden="true" />
               <span className="chapter-meta-item">
-                <AlignLeft
+                <Type
                   className="chapter-meta-icon"
                   size={15}
                   aria-hidden="true"

@@ -2,13 +2,13 @@ import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
-  AlignLeft,
   ArrowLeft,
   ArrowRight,
   ChevronRight,
   Clock3,
   Eye,
   Home,
+  Type,
   UserRound,
 } from 'lucide-react'
 import { MarkdownArticle } from '@/components/markdown-article'
@@ -156,7 +156,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
               </span>
               <span className="chapter-byline-dot" aria-hidden="true" />
               <span className="chapter-meta-item">
-                <AlignLeft
+                <Type
                   className="chapter-meta-icon"
                   size={15}
                   aria-hidden="true"
