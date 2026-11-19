@@ -13,18 +13,20 @@ export function AuthorAvatar({
   className?: string
 }) {
   const classes = cn('author-avatar', `is-${size}`, className)
-  if (avatarUrl) {
-    return (
-      <Image
-        className={classes}
-        src={avatarUrl}
-        alt={`${name}的头像`}
-        width={size === 'lg' ? 76 : size === 'md' ? 40 : 32}
-        height={size === 'lg' ? 76 : size === 'md' ? 40 : 32}
-        style={{ objectPosition: '50% 45%' }}
-        unoptimized
-      />
-    )
-  }
-  return <span className={classes} aria-label={`${name}的头像`}>{name.trim().slice(0, 2)}</span>
+  return (
+    <span className={classes} aria-label={`${name}的头像`}>
+      {avatarUrl ? (
+        <Image
+          src={avatarUrl}
+          alt=""
+          width={size === 'lg' ? 76 : size === 'md' ? 40 : 32}
+          height={size === 'lg' ? 76 : size === 'md' ? 40 : 32}
+          style={{ objectPosition: '50% 45%' }}
+          unoptimized
+        />
+      ) : (
+        <span aria-hidden="true">{name.trim().slice(0, 2)}</span>
+      )}
+    </span>
+  )
 }

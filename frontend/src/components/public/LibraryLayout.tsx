@@ -22,6 +22,7 @@ export function LibraryLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const author = useSiteStore((state) => state.author)
   const categories = useSiteStore((state) => state.categories)
   const notes = useSiteStore((state) => state.notes)
   const location = useLocation()
@@ -72,7 +73,7 @@ export function LibraryLayout() {
           <Menu size={22} />
         </button>
         <Link to="/" className="library-brand">
-          <BrandMark />
+          <BrandMark avatarUrl={author.avatarUrl} />
         </Link>
         <span className="library-header-divider" />
         <span className="library-header-title">笔记库</span>

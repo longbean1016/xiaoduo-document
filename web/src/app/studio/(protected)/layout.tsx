@@ -30,6 +30,7 @@ export default async function ProtectedStudioLayout({
           : session.user.name
       }
       avatarUrl={isOwner ? profile?.avatarUrl : session.user.image}
+      brandAvatarUrl={profile?.avatarUrl}
       categories={categories}
     >
       {children}
