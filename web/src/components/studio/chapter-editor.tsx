@@ -896,18 +896,16 @@ export function ChapterEditor({
           </button>
 
           <div className="hidden items-center gap-1 sm:flex">
-            {isOwner ? (
-              <Hint label="导入 Markdown">
-                <button
-                  type="button"
-                  className="studio-icon-button"
-                  onClick={() => markdownInputRef.current?.click()}
-                  aria-label="导入 Markdown"
-                >
-                  <FileUp size={20} />
-                </button>
-              </Hint>
-            ) : null}
+            <Hint label="导入 Markdown">
+              <button
+                type="button"
+                className="studio-icon-button"
+                onClick={() => markdownInputRef.current?.click()}
+                aria-label="导入 Markdown"
+              >
+                <FileUp size={20} />
+              </button>
+            </Hint>
             <Hint label="版本历史">
               <button
                 type="button"
