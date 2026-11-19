@@ -772,7 +772,7 @@ select:focus {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border: 1px solid transparent;
   border-radius: 50%;
   background:
     linear-gradient(
@@ -784,6 +784,10 @@ select:focus {
   color: var(--paper);
   font-weight: 650;
   line-height: 1;
+}
+
+.author-avatar.has-image {
+  background: var(--field);
 }
 
 .author-avatar.is-sm {
@@ -5499,20 +5503,6 @@ button.markdown-diff-change-item.is-active {
   font-size: 11px;
 }
 
-.collaborator-avatar {
-  display: flex;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--ink);
-  color: var(--paper);
-  font-size: 13px;
-  font-weight: 650;
-}
-
 .collaboration-empty {
   display: flex;
   min-height: 190px;
@@ -5950,11 +5940,6 @@ button.markdown-diff-change-item.is-active {
   border-radius: 6px;
   background: var(--paper-deep);
   padding: 22px;
-}
-
-.studio-profile-avatar-section .author-avatar {
-  border-color: transparent;
-  background: var(--field);
 }
 
 .studio-profile-avatar-section strong {

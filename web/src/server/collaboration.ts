@@ -39,6 +39,7 @@ export interface CollaboratorRecord {
   id: string
   name: string
   email: string
+  avatarUrl: string | null
   status: 'active' | 'suspended'
 }
 
@@ -270,6 +271,7 @@ export async function listCollaborators(): Promise<CollaboratorRecord[]> {
       id: user.id,
       name: user.name,
       email: user.email,
+      avatarUrl: user.image,
       status: user.status,
     })
     .from(user)

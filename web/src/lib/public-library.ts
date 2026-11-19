@@ -7,6 +7,7 @@ import {
   category,
   siteProfile,
   urlRedirect,
+  user,
 } from '@/db/schema'
 import { getArticleViewCount } from '@/server/analytics'
 
@@ -30,6 +31,7 @@ export interface PublicChapter {
 export interface PublicContributor {
   id: string
   name: string
+  avatarUrl: string | null
   role: 'collaborator'
 }
 
@@ -98,8 +100,10 @@ async function listPublicContributors(
     .select({
       authorId: articleVersion.authorId,
       authorName: articleVersion.authorName,
+      avatarUrl: user.image,
     })
     .from(articleVersion)
+    .leftJoin(user, eq(user.id, articleVersion.authorId))
     .where(
       and(
         eq(articleVersion.articleId, articleId),
@@ -113,6 +117,7 @@ async function listPublicContributors(
     contributors.set(version.authorId, {
       id: version.authorId,
       name: version.authorName,
+      avatarUrl: version.avatarUrl ?? null,
       role: 'collaborator',
     })
   }

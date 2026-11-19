@@ -12,10 +12,11 @@ test.beforeEach(async () => {
   try {
     await connection.query(
       `INSERT INTO auth_user (
-        id, name, email, email_verified, role, status, created_at, updated_at
+        id, name, email, email_verified, image, role, status,
+        created_at, updated_at
       ) VALUES (
         'collaborator-19', '协作者十九', 'managed-19@example.com', true,
-        'collaborator', 'active', NOW(3), NOW(3)
+        '/xiaoduo-mark.jpg', 'collaborator', 'active', NOW(3), NOW(3)
       )`,
     )
     await connection.query(
@@ -62,6 +63,12 @@ test('owner suspends and restores a collaborator account', async ({
     ownerPage.getByRole('tab', { name: '邀请记录' }),
   ).toBeVisible()
   await ownerPage.getByRole('tab', { name: '协作者' }).click()
+  const collaboratorRow = ownerPage
+    .locator('.collaborator-row')
+    .filter({ hasText: '协作者十九' })
+  await expect(
+    collaboratorRow.locator('.author-avatar img'),
+  ).toHaveAttribute('src', '/xiaoduo-mark.jpg')
   await ownerPage
     .getByRole('button', { name: '暂停账号 协作者十九' })
     .click()

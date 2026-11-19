@@ -64,6 +64,21 @@ describe('public chapter service', () => {
         ],
       )
       await connection.query(
+        `INSERT INTO auth_user (
+          id, name, email, email_verified, image, role, status,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(3), NOW(3))`,
+        [
+          'collaborator-1',
+          '协作者新昵称',
+          'collaborator@example.com',
+          true,
+          '/xiaoduo-mark.jpg',
+          'collaborator',
+          'active',
+        ],
+      )
+      await connection.query(
         `INSERT INTO article_version (
           id, article_id, kind, title, path, markdown, plain_text,
           author_id, author_name, author_role, created_at
@@ -102,6 +117,7 @@ describe('public chapter service', () => {
       {
         id: 'collaborator-1',
         name: '协作者新昵称',
+        avatarUrl: '/xiaoduo-mark.jpg',
         role: 'collaborator',
       },
     ])

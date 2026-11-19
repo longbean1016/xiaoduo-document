@@ -28,6 +28,21 @@ test('public reading surfaces use the larger type and icon scale', async ({
   const connection = await createTestConnection()
   try {
     await connection.query(
+      `INSERT INTO auth_user (
+        id, name, email, email_verified, image, role, status,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(3), NOW(3))`,
+      [
+        'collaborator-byline',
+        '周行',
+        'byline@example.com',
+        true,
+        '/xiaoduo-mark.jpg',
+        'collaborator',
+        'active',
+      ],
+    )
+    await connection.query(
       `INSERT INTO article_version (
         id, article_id, kind, title, category_id, path, markdown, plain_text,
         author_id, author_name, author_role, created_at
@@ -68,6 +83,9 @@ test('public reading surfaces use the larger type and icon scale', async ({
   ).toHaveCount(1)
   const authorItems = authors.locator('.chapter-author')
   await expect(authorItems).toHaveCount(2)
+  await expect(
+    authorItems.nth(1).locator('.author-avatar img'),
+  ).toHaveAttribute('src', '/xiaoduo-mark.jpg')
   expect(
     await authorItems
       .nth(0)

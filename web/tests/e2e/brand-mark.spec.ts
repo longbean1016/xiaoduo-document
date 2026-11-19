@@ -130,6 +130,20 @@ test('author and profile avatars use the brand icon framing', async ({
   await expect(articleFrame).toHaveCSS('width', '40px')
   await expect(articleFrame).toHaveCSS('height', '40px')
   await expect(articleFrame).toHaveCSS('border-radius', '50%')
+  await expect(articleFrame).toHaveCSS(
+    'border-color',
+    'rgba(0, 0, 0, 0)',
+  )
+  expect(
+    await page.locator('.chapter-author .author-avatar').evaluateAll(
+      (elements) =>
+        elements.every(
+          (element) =>
+            getComputedStyle(element).borderColor ===
+            'rgba(0, 0, 0, 0)',
+        ),
+    ),
+  ).toBe(true)
   await expect(articleImage).toHaveCSS('width', '38px')
   await expect(articleImage).toHaveCSS('height', '38px')
   await expect(articleImage).toHaveCSS('object-position', '50% 45%')
@@ -145,6 +159,9 @@ test('author and profile avatars use the brand icon framing', async ({
   await page.getByLabel('密码').fill('owner-test-password')
   await page.getByRole('button', { name: '进入写作台' }).click()
   await expect(page).toHaveURL(/\/studio$/)
+  await expect(
+    page.locator('.studio-sidebar .author-avatar'),
+  ).toHaveCSS('border-color', 'rgba(0, 0, 0, 0)')
 
   await page.goto('/studio/settings')
   const brandImage = page.locator(

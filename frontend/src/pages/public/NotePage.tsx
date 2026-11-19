@@ -37,6 +37,7 @@ export function NotePage() {
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null)
   const [applicationOpen, setApplicationOpen] = useState(false)
   const author = useSiteStore((state) => state.author)
+  const collaborators = useSiteStore((state) => state.collaborators)
   const studioRole = useSiteStore((state) => state.studioRole)
   const articleViewEvents = useSiteStore((state) => state.articleViewEvents)
   const recordArticleView = useSiteStore((state) => state.recordArticleView)
@@ -89,7 +90,9 @@ export function NotePage() {
     ...contributors.map((contributor) => ({
       id: contributor.id,
       name: contributor.name,
-      avatarUrl: undefined,
+      avatarUrl: collaborators.find(
+        (collaborator) => collaborator.id === contributor.id,
+      )?.avatarUrl,
     })),
   ]
 

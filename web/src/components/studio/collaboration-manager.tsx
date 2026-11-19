@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog } from '@/components/ui/dialog'
+import { AuthorAvatar } from '@/components/author-avatar'
 import {
   formatDateTime,
 } from '@/lib/format-time'
@@ -43,6 +44,7 @@ interface Collaborator {
   id: string
   name: string
   email: string
+  avatarUrl: string | null
   status: 'active' | 'suspended'
 }
 
@@ -395,9 +397,11 @@ export function CollaborationManager({
               ).length
               return (
                 <article key={collaborator.id} className="collaborator-row">
-                  <span className="collaborator-avatar">
-                    {collaborator.name.slice(0, 2)}
-                  </span>
+                  <AuthorAvatar
+                    name={collaborator.name}
+                    avatarUrl={collaborator.avatarUrl}
+                    size="md"
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <strong>{collaborator.name}</strong>
