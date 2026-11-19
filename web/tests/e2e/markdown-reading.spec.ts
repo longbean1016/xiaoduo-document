@@ -12,6 +12,8 @@ const readingMarkdown = `## 阅读渲染
 
 *公开斜体*
 
+![品牌图](/xiaoduo-brand-v2.webp)
+
 | 能力 | 状态 |
 | --- | --- |
 | 表格 | 支持 |
@@ -236,4 +238,44 @@ test('reading headings use the same compact blank-line spacing as the editor', a
   expect(headingBox.y - (paragraphBox.y + paragraphBox.height)).toBeLessThan(
     40,
   )
+})
+
+test('document images keep a compact bounded scale in reader and editor', async ({
+  page,
+}) => {
+  await page.goto('/library/attention-and-writing/写作不是归档')
+  const readerImage = page
+    .locator('.markdown-body')
+    .locator('img[src="/xiaoduo-brand-v2.webp"]')
+  await expect(readerImage).toBeVisible()
+  const readerBox = await readerImage.boundingBox()
+  if (!readerBox) throw new Error('找不到阅读页图片')
+  expect(readerBox.height).toBeLessThanOrEqual(460)
+  await expect(readerImage).toHaveCSS('max-height', '460px')
+  await expect(readerImage).toHaveCSS('object-fit', 'contain')
+
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/notes/article-1')
+  const editorImage = page
+    .getByRole('textbox', { name: '章节正文' })
+    .locator('img[src="/xiaoduo-brand-v2.webp"]')
+  await expect(editorImage).toBeVisible()
+  const editorBox = await editorImage.boundingBox()
+  if (!editorBox) throw new Error('找不到编辑器图片')
+  expect(editorBox.height).toBeLessThanOrEqual(460)
+  await expect(editorImage).toHaveCSS('max-height', '460px')
+  await expect(editorImage).toHaveCSS('object-fit', 'contain')
+
+  await page.setViewportSize({ width: 375, height: 812 })
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth),
+    )
+    .toBeLessThanOrEqual(375)
 })

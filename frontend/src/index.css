@@ -1431,11 +1431,14 @@ select:focus {
 
 .zhijian-prose img {
   display: block;
+  width: auto;
   max-width: 100%;
+  max-height: 460px;
   height: auto;
   margin: 1.5em auto;
   border: 1px solid var(--line);
   border-radius: 5px;
+  object-fit: contain;
 }
 
 .zhijian-prose img.ProseMirror-selectednode {
@@ -5640,10 +5643,13 @@ select:focus {
 
 .markdown-body img {
   display: block;
+  width: auto;
   max-width: 100%;
+  max-height: 460px;
   height: auto;
   margin: 1.8em auto;
   border-radius: 4px;
+  object-fit: contain;
 }
 
 .markdown-body hr {
