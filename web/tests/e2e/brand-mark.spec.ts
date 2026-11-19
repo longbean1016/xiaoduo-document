@@ -1,5 +1,6 @@
 import './database-isolation'
 import { expect, test } from '@playwright/test'
+import { createTestConnection } from '../test-db'
 import { seedTestDatabase } from '../seed-test-db'
 
 test.beforeEach(async () => {
@@ -107,4 +108,51 @@ test('Xiaoduo avatar source is high resolution and square', async ({
 
   expect(dimensions.width).toBeGreaterThanOrEqual(512)
   expect(dimensions.height).toBeGreaterThanOrEqual(512)
+})
+
+test('author and profile avatars use the brand icon framing', async ({
+  page,
+}) => {
+  const connection = await createTestConnection()
+  try {
+    await connection.query(
+      `UPDATE site_profile SET avatar_url = ? WHERE id = 'primary'`,
+      ['/xiaoduo-brand-v2.webp'],
+    )
+  } finally {
+    await connection.end()
+  }
+
+  await page.goto('/library/attention-and-writing/写作不是归档')
+  const articleAvatar = page.locator('.chapter-author img').first()
+  await expect(articleAvatar).toBeVisible()
+  await expect(articleAvatar).toHaveCSS('width', '40px')
+  await expect(articleAvatar).toHaveCSS('height', '40px')
+  await expect(articleAvatar).toHaveCSS('border-radius', '50%')
+  await expect(articleAvatar).toHaveCSS('object-position', '50% 45%')
+  expect(
+    await articleAvatar.evaluate(
+      (element) => getComputedStyle(element).boxShadow,
+    ),
+  ).not.toBe('none')
+
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.goto('/studio/settings')
+  const profileAvatar = page.locator('.studio-profile-avatar-section img')
+  await expect(profileAvatar).toBeVisible()
+  await expect(profileAvatar).toHaveCSS('width', '40px')
+  await expect(profileAvatar).toHaveCSS('height', '40px')
+  await expect(profileAvatar).toHaveCSS('border-radius', '50%')
+  await expect(profileAvatar).toHaveCSS('object-position', '50% 45%')
+  expect(
+    await profileAvatar.evaluate(
+      (element) => getComputedStyle(element).boxShadow,
+    ),
+  ).not.toBe('none')
 })

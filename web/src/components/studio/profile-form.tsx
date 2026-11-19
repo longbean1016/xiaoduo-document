@@ -136,7 +136,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
           <AuthorAvatar
             name={values.authorName || '作者'}
             avatarUrl={avatarPreviewUrl || values.avatarUrl}
-            size="lg"
+            size="md"
           />
           <div className="min-w-0 flex-1">
             <strong>头像</strong>

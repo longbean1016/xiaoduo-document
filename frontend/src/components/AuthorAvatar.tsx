@@ -17,7 +17,7 @@ export function AuthorAvatar({
       aria-label={`${name}的头像`}
     >
       {avatarUrl ? (
-        <img src={avatarUrl} alt="" />
+        <img src={avatarUrl} alt="" style={{ objectPosition: '50% 45%' }} />
       ) : (
         <span aria-hidden="true">{initials(name)}</span>
       )}
