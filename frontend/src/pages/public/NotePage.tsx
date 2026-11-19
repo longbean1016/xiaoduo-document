@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
+  AlignLeft,
   ArrowLeft,
   ArrowRight,
   ChevronRight,
+  Clock3,
+  Eye,
   Home,
+  UserRound,
   UserRoundPlus,
 } from 'lucide-react'
 import {
@@ -184,6 +188,12 @@ export function NotePage() {
                 role="group"
                 aria-label="作者"
               >
+                <UserRound
+                  className="chapter-meta-icon"
+                  size={16}
+                  aria-hidden="true"
+                  data-meta-icon="author"
+                />
                 {authors.map((author) => (
                   <span key={author.id} className="chapter-author">
                     <AuthorAvatar
@@ -196,20 +206,42 @@ export function NotePage() {
                 ))}
               </span>
               <span className="chapter-byline-dot" aria-hidden="true" />
-              <span>{countWords(published.plainText)} 字</span>
-              <span className="chapter-byline-dot" aria-hidden="true" />
-              <span
-                className="article-view-count"
-                data-visual-dynamic
-              >
-                {viewCount} 次浏览
+              <span className="chapter-meta-item">
+                <AlignLeft
+                  className="chapter-meta-icon"
+                  size={15}
+                  aria-hidden="true"
+                  data-meta-icon="words"
+                />
+                <span>{countWords(published.plainText)} 字</span>
               </span>
               <span className="chapter-byline-dot" aria-hidden="true" />
-              <span>
-                更新于{' '}
-                <time dateTime={published.publishedAt}>
-                  {formatDateTime(published.publishedAt)}
-                </time>
+              <span
+                className="article-view-count chapter-meta-item"
+                data-visual-dynamic
+              >
+                <Eye
+                  className="chapter-meta-icon"
+                  size={15}
+                  aria-hidden="true"
+                  data-meta-icon="views"
+                />
+                <span>{viewCount} 次浏览</span>
+              </span>
+              <span className="chapter-byline-dot" aria-hidden="true" />
+              <span className="chapter-meta-item">
+                <Clock3
+                  className="chapter-meta-icon"
+                  size={15}
+                  aria-hidden="true"
+                  data-meta-icon="updated"
+                />
+                <span>
+                  更新于{' '}
+                  <time dateTime={published.publishedAt}>
+                    {formatDateTime(published.publishedAt)}
+                  </time>
+                </span>
               </span>
             </div>
           </header>

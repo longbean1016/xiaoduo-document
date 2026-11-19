@@ -4804,6 +4804,19 @@ select:focus {
   font-weight: 650;
 }
 
+.chapter-meta-item {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.chapter-meta-icon {
+  flex: 0 0 auto;
+  color: var(--muted-faint);
+  stroke-width: 1.8;
+}
+
 .chapter-byline-dot {
   width: 3px;
   height: 3px;
@@ -4816,6 +4829,10 @@ select:focus {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
+}
+
+.chapter-author-group > .chapter-meta-icon {
+  margin-right: -8px;
 }
 
 .chapter-author {
