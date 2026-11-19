@@ -91,12 +91,12 @@ export function StudioDashboardPage() {
               : '这里只展示你获得授权编辑的文章，其他内容不可见。'}
           </p>
         </div>
-        {isOwner && (
-          <div className="flex items-center gap-2">
-            <button type="button" className="studio-secondary-button">
-              <Upload size={18} />
-              导入 Markdown
-            </button>
+        <div className="flex items-center gap-2">
+          <button type="button" className="studio-secondary-button">
+            <Upload size={18} />
+            导入 Markdown
+          </button>
+          {isOwner && (
             <button
               type="button"
               className="studio-primary-button"
@@ -106,8 +106,8 @@ export function StudioDashboardPage() {
               <FilePlus2 size={19} />
               新建章节
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </header>
 
       <Dialog

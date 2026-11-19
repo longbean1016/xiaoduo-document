@@ -219,7 +219,7 @@ test('collaborator sees only authorized chapters and no owner actions', async ({
   ).toHaveCount(0)
   await expect(
     page.getByRole('button', { name: '导入 Markdown' }),
-  ).toHaveCount(0)
+  ).toBeVisible()
   await expect(
     page.getByRole('button', { name: '新建章节', exact: true }),
   ).toHaveCount(0)

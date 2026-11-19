@@ -286,19 +286,19 @@ export function ArticleDashboard({
               : '这里只展示你获得授权编辑的文章，其他内容不可见。'}
           </p>
         </div>
-        {canManage ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="studio-secondary-button"
-              onClick={() => {
-                setMessage('')
-                setImportOpen(true)
-              }}
-            >
-              <Upload size={18} />
-              导入 Markdown
-            </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="studio-secondary-button"
+            onClick={() => {
+              setMessage('')
+              setImportOpen(true)
+            }}
+          >
+            <Upload size={18} />
+            导入 Markdown
+          </button>
+          {canManage ? (
             <button
               type="button"
               className="studio-primary-button"
@@ -311,8 +311,8 @@ export function ArticleDashboard({
               <FilePlus2 size={19} />
               新建章节
             </button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </header>
 
       {message && !importOpen && !createOpen && !trashTargets.length ? (
