@@ -641,7 +641,10 @@ export function StudioNotePage() {
         expectedRevision: revisionRef.current,
       })
       if (result !== 'saved') throw new Error('导入失败')
-      editor?.commands.setContent(markdown, { emitUpdate: false })
+      editor?.commands.setContent(markdown, {
+        contentType: 'markdown',
+        emitUpdate: false,
+      })
       revisionRef.current += 1
       dirtyRef.current = false
       setSaveState('saved')

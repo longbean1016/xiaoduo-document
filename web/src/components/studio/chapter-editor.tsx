@@ -781,6 +781,7 @@ export function ChapterEditor({
       return
     }
     editor?.commands.setContent(payload.article.markdown, {
+      contentType: 'markdown',
       emitUpdate: false,
     })
     revisionRef.current = payload.article.revision

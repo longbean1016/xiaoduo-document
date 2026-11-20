@@ -126,3 +126,53 @@ test('collaborator imports Markdown and receives access to the draft', async ({
     await verify.end()
   }
 })
+
+test('editor import renders Markdown structure instead of source markers', async ({
+  page,
+}) => {
+  await page.goto('/studio/login')
+  await page.getByRole('button', { name: '站主密码登录' }).click()
+  await page.getByLabel('邮箱').fill('owner@example.com')
+  await page.getByLabel('密码').fill('owner-test-password')
+  await page.getByRole('button', { name: '进入写作台' }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/studio/notes/article-1')
+  await page.locator('input[accept*=".md"]').setInputFiles({
+    name: '格式导入.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from(
+      '## 导入小节\n\n**加粗正文**\n\n- 列表项',
+    ),
+  })
+
+  const body = page.getByRole('textbox', { name: '章节正文' })
+  await expect(
+    body.getByRole('heading', { level: 2, name: '导入小节' }),
+  ).toBeVisible()
+  await expect(
+    body.locator('strong').filter({ hasText: '加粗正文' }),
+  ).toBeVisible()
+  await expect(body.locator('li').filter({ hasText: '列表项' })).toBeVisible()
+  await expect(
+    page
+      .getByRole('navigation', { name: '当前草稿目录' })
+      .getByRole('button', { name: '导入小节' }),
+  ).toBeVisible()
+  await expect(body).not.toContainText('## 导入小节')
+  await expect(body).not.toContainText('**加粗正文**')
+
+  await page.reload()
+  const reloadedBody = page.getByRole('textbox', { name: '章节正文' })
+  await expect(
+    reloadedBody.getByRole('heading', {
+      level: 2,
+      name: '导入小节',
+    }),
+  ).toBeVisible()
+  await expect(
+    reloadedBody.locator('strong').filter({ hasText: '加粗正文' }),
+  ).toBeVisible()
+  await expect(reloadedBody).not.toContainText('## 导入小节')
+})
