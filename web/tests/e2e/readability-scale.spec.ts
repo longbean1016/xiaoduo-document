@@ -48,6 +48,25 @@ test('public reading surfaces use the larger type and icon scale', async ({
         author_id, author_name, author_role, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3))`,
       [
+        'version-byline-manual-only',
+        'article-1',
+        'manual',
+        '写作不是归档',
+        'category-1',
+        '写作不是归档',
+        '## 手动版本\n\n未发布内容。\n',
+        '写作不是归档 手动版本 未发布内容。',
+        'collaborator-manual-only',
+        '未发布手稿作者',
+        'collaborator',
+      ],
+    )
+    await connection.query(
+      `INSERT INTO article_version (
+        id, article_id, kind, title, category_id, path, markdown, plain_text,
+        author_id, author_name, author_role, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3))`,
+      [
         'version-byline-contributor',
         'article-1',
         'published',
@@ -81,6 +100,9 @@ test('public reading surfaces use the larger type and icon scale', async ({
   await expect(
     authors.locator('strong').filter({ hasText: '周行' }),
   ).toHaveCount(1)
+  await expect(
+    authors.locator('strong').filter({ hasText: '未发布手稿作者' }),
+  ).toHaveCount(0)
   const authorItems = authors.locator('.chapter-author')
   await expect(authorItems).toHaveCount(2)
   await expect(

@@ -95,20 +95,6 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
     decodedCategorySlug,
     decodedChapterPath,
   )
-  const profile = await getPublicSiteProfile()
-  const authorName = profile?.authorName ?? chapter.authorName
-  const authors = [
-    {
-      id: 'owner',
-      name: authorName,
-      avatarUrl: profile?.avatarUrl,
-    },
-    ...chapter.contributors.map((contributor) => ({
-      id: contributor.id,
-      name: contributor.name,
-      avatarUrl: contributor.avatarUrl,
-    })),
-  ]
 
   return (
     <article className="chapter-page">
@@ -143,7 +129,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
                   aria-hidden="true"
                   data-meta-icon="author"
                 />
-                {authors.map((author) => (
+                {chapter.authors.map((author) => (
                   <span key={author.id} className="chapter-author">
                     <AuthorAvatar
                       name={author.name}

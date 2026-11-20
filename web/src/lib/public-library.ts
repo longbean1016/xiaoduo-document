@@ -24,8 +24,16 @@ export interface PublicChapter {
   authorId: string
   authorName: string
   authorRole: 'owner' | 'collaborator'
+  authors: PublicAuthor[]
   contributors: PublicContributor[]
   viewCount: number
+}
+
+export interface PublicAuthor {
+  id: string
+  name: string
+  avatarUrl: string | null
+  role: 'owner' | 'collaborator'
 }
 
 export interface PublicContributor {
@@ -93,13 +101,12 @@ async function latestPublishedVersion(articleId: string) {
   return version ?? null
 }
 
-async function listPublicContributors(
-  articleId: string,
-): Promise<PublicContributor[]> {
+async function listPublicAuthors(articleId: string): Promise<PublicAuthor[]> {
   const versions = await db
     .select({
       authorId: articleVersion.authorId,
       authorName: articleVersion.authorName,
+      authorRole: articleVersion.authorRole,
       avatarUrl: user.image,
     })
     .from(articleVersion)
@@ -107,21 +114,24 @@ async function listPublicContributors(
     .where(
       and(
         eq(articleVersion.articleId, articleId),
-        eq(articleVersion.authorRole, 'collaborator'),
+        eq(articleVersion.kind, 'published'),
       ),
     )
     .orderBy(desc(articleVersion.createdAt), desc(articleVersion.id))
-  const contributors = new Map<string, PublicContributor>()
+  const authors = new Map<string, PublicAuthor>()
   for (const version of versions) {
-    if (contributors.has(version.authorId)) continue
-    contributors.set(version.authorId, {
+    if (authors.has(version.authorId)) continue
+    authors.set(version.authorId, {
       id: version.authorId,
       name: version.authorName,
       avatarUrl: version.avatarUrl ?? null,
-      role: 'collaborator',
+      role: version.authorRole,
     })
   }
-  return [...contributors.values()]
+  return [...authors.values()].sort((left, right) => {
+    if (left.role === right.role) return 0
+    return left.role === 'owner' ? -1 : 1
+  })
 }
 
 export async function listPublicLibrary({
@@ -289,12 +299,17 @@ export async function getPublicChapterByPath(
   for (const current of publishedArticles) {
     const version = await latestPublishedVersion(current.id)
     if (version?.path !== chapterPath) continue
+    const authors = await listPublicAuthors(current.id)
     return {
       ...current,
       ...version,
       id: current.id,
       categoryId: current.categoryId,
-      contributors: await listPublicContributors(current.id),
+      authors,
+      contributors: authors.filter(
+        (author): author is PublicContributor =>
+          author.role === 'collaborator',
+      ),
       viewCount: await getArticleViewCount(current.id),
     }
   }

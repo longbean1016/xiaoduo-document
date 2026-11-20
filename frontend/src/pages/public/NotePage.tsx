@@ -64,37 +64,37 @@ export function NotePage() {
   const viewCount = note
     ? articleViewCount(articleViewEvents, note.id)
     : 0
-  const contributors = note
+  const redirectTo = resolveRedirect(redirects, location.pathname)
+  const authors = note
     ? [
         ...new Map(
           note.versions
-            .map((version) => version.author)
             .filter(
-              (versionAuthor) =>
-                versionAuthor?.role === 'collaborator',
+              (version) =>
+                version.kind === 'published' && version.author,
             )
-            .map((versionAuthor) => [
-              versionAuthor!.id,
-              versionAuthor!,
+            .map((version) => [
+              version.author!.id,
+              version.author!,
             ]),
         ).values(),
       ]
+        .sort((left, right) => {
+          if (left.role === right.role) return 0
+          return left.role === 'owner' ? -1 : 1
+        })
+        .map((versionAuthor) => ({
+          id: versionAuthor.id,
+          name: versionAuthor.name,
+          avatarUrl:
+            versionAuthor.role === 'owner'
+              ? author.avatarUrl
+              : collaborators.find(
+                  (collaborator) =>
+                    collaborator.id === versionAuthor.id,
+                )?.avatarUrl,
+        }))
     : []
-  const redirectTo = resolveRedirect(redirects, location.pathname)
-  const authors = [
-    {
-      id: 'owner',
-      name: author.name,
-      avatarUrl: author.avatarUrl,
-    },
-    ...contributors.map((contributor) => ({
-      id: contributor.id,
-      name: contributor.name,
-      avatarUrl: collaborators.find(
-        (collaborator) => collaborator.id === contributor.id,
-      )?.avatarUrl,
-    })),
-  ]
 
   usePageTitle(published ? `${published.title} · 知笺` : '未找到 · 知笺')
 
