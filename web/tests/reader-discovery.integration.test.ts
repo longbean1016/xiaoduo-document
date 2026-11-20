@@ -37,9 +37,10 @@ describe('reader discovery outputs', () => {
            'attention-and-writing', '公开文章',
            '介绍\\n\\n![示意图](https://cdn.example.com/cover.webp)',
            '介绍 正文摘要', 'owner-1', '小多', 'owner', NOW(3)),
-          ('version-2', 'article-1', 'manual', '公开文章', 'category-1',
+          ('version-2', 'article-1', 'published', '公开文章', 'category-1',
            'attention-and-writing', '公开文章', '版本正文', '版本正文',
-           'collaborator-1', '协作者甲', 'collaborator', NOW(3))`,
+           'collaborator-1', '协作者甲', 'collaborator',
+           DATE_SUB(NOW(3), INTERVAL 1 SECOND))`,
       )
     } finally {
       await connection.end()
