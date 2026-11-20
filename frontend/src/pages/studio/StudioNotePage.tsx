@@ -66,6 +66,7 @@ import {
 import { StudioSelect } from '../../components/studio/StudioSelect'
 import { Dialog } from '../../components/ui/Dialog'
 import { Hint } from '../../components/ui/Tooltip'
+import { centerTocItem } from '../../lib/centerTocItem'
 import { compressImageFile } from '../../lib/images'
 import { markdownHeadings } from '../../lib/markdownHeadings'
 import { looksLikeMermaidSource } from '../../lib/markdownMermaid'
@@ -161,6 +162,7 @@ export function StudioNotePage() {
   const draftPaneRef = useRef<HTMLElement | null>(null)
   const publishedPaneRef = useRef<HTMLElement | null>(null)
   const editorWorkspaceRef = useRef<HTMLDivElement | null>(null)
+  const editorTocRef = useRef<HTMLElement | null>(null)
   const tocSelectionLockRef = useRef(false)
   const tocSelectionTimerRef = useRef<number | null>(null)
   const normalizeTimerRef = useRef<number | null>(null)
@@ -452,6 +454,17 @@ export function StudioNotePage() {
       workspace.removeEventListener('scroll', onScroll)
     }
   }, [compareOpen, note?.markdown])
+
+  useEffect(() => {
+    const toc = editorTocRef.current
+    if (!toc || !activeEditorHeadingId) return
+    const active = toc.querySelector<HTMLElement>(
+      'button[aria-current="location"]',
+    )
+    if (!active) return
+
+    centerTocItem(toc, active)
+  }, [activeEditorHeadingId])
 
   const currentCategory = categories.find((item) => item.id === categoryId)
   const publishedCategory = categories.find(
@@ -1075,7 +1088,10 @@ export function StudioNotePage() {
           </section>
 
           {!compareOpen && (
-            <aside className="chapter-toc studio-editor-toc">
+            <aside
+              ref={editorTocRef}
+              className="chapter-toc studio-editor-toc"
+            >
               <p className="section-kicker">On this page</p>
               {editorHeadings.length ? (
                 <nav aria-label="当前草稿目录">

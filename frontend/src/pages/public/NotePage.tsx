@@ -19,6 +19,7 @@ import {
 import { AuthorAvatar } from '../../components/AuthorAvatar'
 import { CollaborationApplicationDialog } from '../../components/public/CollaborationApplicationDialog'
 import { MarkdownArticle } from '../../components/public/MarkdownArticle'
+import { centerTocItem } from '../../lib/centerTocItem'
 import { usePageTitle } from '../../lib/usePageTitle'
 import { markdownHeadings } from '../../lib/markdownHeadings'
 import { formatDateTime } from '../../lib/text'
@@ -166,14 +167,7 @@ export function NotePage() {
     )
     if (!active) return
 
-    const tocRect = toc.getBoundingClientRect()
-    const activeRect = active.getBoundingClientRect()
-    const edgePadding = 12
-    if (activeRect.top < tocRect.top + edgePadding) {
-      toc.scrollTop += activeRect.top - tocRect.top - edgePadding
-    } else if (activeRect.bottom > tocRect.bottom - edgePadding) {
-      toc.scrollTop += activeRect.bottom - tocRect.bottom + edgePadding
-    }
+    centerTocItem(toc, active)
   }, [activeHeadingId])
 
   if (redirectTo) return <Navigate to={redirectTo} replace />

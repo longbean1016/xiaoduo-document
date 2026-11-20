@@ -65,6 +65,7 @@ import { StudioSelect } from '@/components/ui/studio-select'
 import { ThemePicker } from '@/components/theme-picker'
 import { VersionHistory, type VersionItem } from './version-history'
 import { MarkdownDiffView } from './markdown-diff-view'
+import { centerTocItem } from '@/lib/center-toc-item'
 import { parseDatabaseDateTime } from '@/lib/database-time'
 import { compressImageForUpload } from '@/lib/image-compression'
 import { countWords, markdownHeadings } from '@/lib/markdown-headings'
@@ -204,6 +205,7 @@ export function ChapterEditor({
     async () => {},
   )
   const workspaceRef = useRef<HTMLDivElement | null>(null)
+  const editorTocRef = useRef<HTMLElement | null>(null)
   const tocLockRef = useRef(false)
   const tocTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -496,6 +498,17 @@ export function ChapterEditor({
       workspace.removeEventListener('scroll', onScroll)
     }
   }, [draftTick, editorHeadings])
+
+  useEffect(() => {
+    const toc = editorTocRef.current
+    if (!toc || !activeHeadingId) return
+    const active = toc.querySelector<HTMLElement>(
+      'button[aria-current="location"]',
+    )
+    if (!active) return
+
+    centerTocItem(toc, active)
+  }, [activeHeadingId])
 
   const currentCategory = categories.find(
     (category) => category.id === categoryId,
@@ -1145,7 +1158,10 @@ export function ChapterEditor({
             </div>
           </section>
 
-          <aside className="chapter-toc studio-editor-toc">
+          <aside
+            ref={editorTocRef}
+            className="chapter-toc studio-editor-toc"
+          >
             <p className="section-kicker">On this page</p>
             {editorHeadings.length ? (
               <nav aria-label="当前草稿目录">

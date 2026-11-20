@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { centerTocItem } from '@/lib/center-toc-item'
 import type { MarkdownHeading } from '@/lib/markdown-headings'
 import { cn } from '@/lib/utils'
 
@@ -59,14 +60,7 @@ export function ChapterToc({ headings }: { headings: MarkdownHeading[] }) {
     )
     if (!active) return
 
-    const tocRect = toc.getBoundingClientRect()
-    const activeRect = active.getBoundingClientRect()
-    const edgePadding = 12
-    if (activeRect.top < tocRect.top + edgePadding) {
-      toc.scrollTop += activeRect.top - tocRect.top - edgePadding
-    } else if (activeRect.bottom > tocRect.bottom - edgePadding) {
-      toc.scrollTop += activeRect.bottom - tocRect.bottom + edgePadding
-    }
+    centerTocItem(toc, active)
   }, [activeHeadingId])
 
   return (
