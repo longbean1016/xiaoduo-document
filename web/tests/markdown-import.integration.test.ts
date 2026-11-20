@@ -3,7 +3,7 @@ import {
   getArticleDraft,
   listArticleDrafts,
 } from '@/server/articles'
-import { importMarkdownDraft } from '@/server/article-import'
+import { importMarkdownIntoArticle } from '@/server/article-import'
 import { createTestConnection, resetTestDatabase } from './test-db'
 
 describe('markdown import service', () => {
@@ -29,39 +29,36 @@ describe('markdown import service', () => {
     }
   })
 
-  it('imports a Markdown file as a new draft at category end', async () => {
-    const article = await importMarkdownDraft({
-      categoryId: 'category-1',
+  it('imports Markdown into an existing article draft', async () => {
+    const article = await importMarkdownIntoArticle({
+      articleId: 'article-1',
       fileName: '写作与整理.md',
       markdown: '## 一节\n\n正文内容\n\n- 列表项',
     })
     const saved = await getArticleDraft(article.id)
     expect(saved).toMatchObject({
-      title: '写作与整理',
+      id: 'article-1',
+      title: '已有章节',
       categoryId: 'category-1',
       publicationState: 'draft',
       markdown: '## 一节\n\n正文内容\n\n- 列表项',
       sourceFileName: '写作与整理.md',
     })
     expect(saved?.plainText).toContain('正文内容')
-    expect(
-      (await listArticleDrafts()).filter(
-        (item) => item.categoryId === 'category-1',
-      ).at(-1)?.id,
-    ).toBe(article.id)
+    expect(await listArticleDrafts()).toHaveLength(1)
   })
 
   it('rejects empty content and unsupported file types without partial writes', async () => {
     await expect(
-      importMarkdownDraft({
-        categoryId: 'category-1',
+      importMarkdownIntoArticle({
+        articleId: 'article-1',
         fileName: 'empty.md',
         markdown: '   ',
       }),
     ).rejects.toThrow('EMPTY_MARKDOWN')
     await expect(
-      importMarkdownDraft({
-        categoryId: 'category-1',
+      importMarkdownIntoArticle({
+        articleId: 'article-1',
         fileName: 'notes.txt',
         markdown: '# 内容',
       }),

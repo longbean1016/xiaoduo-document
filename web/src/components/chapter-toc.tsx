@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { centerTocItem } from '@/lib/center-toc-item'
 import type { MarkdownHeading } from '@/lib/markdown-headings'
 import { cn } from '@/lib/utils'
 
 export function ChapterToc({ headings }: { headings: MarkdownHeading[] }) {
+  const tocRef = useRef<HTMLElement>(null)
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(
     headings[0]?.id ?? null,
   )
@@ -50,8 +52,19 @@ export function ChapterToc({ headings }: { headings: MarkdownHeading[] }) {
     }
   }, [headings])
 
+  useEffect(() => {
+    const toc = tocRef.current
+    if (!toc || !activeHeadingId) return
+    const active = toc.querySelector<HTMLElement>(
+      'a[aria-current="location"]',
+    )
+    if (!active) return
+
+    centerTocItem(toc, active)
+  }, [activeHeadingId])
+
   return (
-    <aside className="chapter-toc" aria-label="本章目录">
+    <aside ref={tocRef} className="chapter-toc" aria-label="本章目录">
       <p className="section-kicker">On this page</p>
       <nav>
         {headings.map((heading) => (

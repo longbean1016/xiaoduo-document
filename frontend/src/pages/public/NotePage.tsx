@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,6 +19,7 @@ import {
 import { AuthorAvatar } from '../../components/AuthorAvatar'
 import { CollaborationApplicationDialog } from '../../components/public/CollaborationApplicationDialog'
 import { MarkdownArticle } from '../../components/public/MarkdownArticle'
+import { centerTocItem } from '../../lib/centerTocItem'
 import { usePageTitle } from '../../lib/usePageTitle'
 import { markdownHeadings } from '../../lib/markdownHeadings'
 import { formatDateTime } from '../../lib/text'
@@ -34,6 +35,7 @@ import { NotFoundPage } from './NotFoundPage'
 export function NotePage() {
   const { categorySlug, noteSlug } = useParams()
   const location = useLocation()
+  const tocRef = useRef<HTMLElement>(null)
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null)
   const [applicationOpen, setApplicationOpen] = useState(false)
   const author = useSiteStore((state) => state.author)
@@ -64,37 +66,37 @@ export function NotePage() {
   const viewCount = note
     ? articleViewCount(articleViewEvents, note.id)
     : 0
-  const contributors = note
+  const redirectTo = resolveRedirect(redirects, location.pathname)
+  const authors = note
     ? [
         ...new Map(
           note.versions
-            .map((version) => version.author)
             .filter(
-              (versionAuthor) =>
-                versionAuthor?.role === 'collaborator',
+              (version) =>
+                version.kind === 'published' && version.author,
             )
-            .map((versionAuthor) => [
-              versionAuthor!.id,
-              versionAuthor!,
+            .map((version) => [
+              version.author!.id,
+              version.author!,
             ]),
         ).values(),
       ]
+        .sort((left, right) => {
+          if (left.role === right.role) return 0
+          return left.role === 'owner' ? -1 : 1
+        })
+        .map((versionAuthor) => ({
+          id: versionAuthor.id,
+          name: versionAuthor.name,
+          avatarUrl:
+            versionAuthor.role === 'owner'
+              ? author.avatarUrl
+              : collaborators.find(
+                  (collaborator) =>
+                    collaborator.id === versionAuthor.id,
+                )?.avatarUrl,
+        }))
     : []
-  const redirectTo = resolveRedirect(redirects, location.pathname)
-  const authors = [
-    {
-      id: 'owner',
-      name: author.name,
-      avatarUrl: author.avatarUrl,
-    },
-    ...contributors.map((contributor) => ({
-      id: contributor.id,
-      name: contributor.name,
-      avatarUrl: collaborators.find(
-        (collaborator) => collaborator.id === contributor.id,
-      )?.avatarUrl,
-    })),
-  ]
 
   usePageTitle(published ? `${published.title} · 知笺` : '未找到 · 知笺')
 
@@ -156,6 +158,17 @@ export function NotePage() {
       scrollRoot.removeEventListener('scroll', onScroll)
     }
   }, [markdown])
+
+  useEffect(() => {
+    const toc = tocRef.current
+    if (!toc || !activeHeadingId) return
+    const active = toc.querySelector<HTMLElement>(
+      'a[aria-current="location"]',
+    )
+    if (!active) return
+
+    centerTocItem(toc, active)
+  }, [activeHeadingId])
 
   if (redirectTo) return <Navigate to={redirectTo} replace />
   if (!category || !note || !published) return <NotFoundPage />
@@ -308,7 +321,11 @@ export function NotePage() {
         </div>
 
         {!!headings.length && (
-          <aside className="chapter-toc" aria-label="本章目录">
+          <aside
+            ref={tocRef}
+            className="chapter-toc"
+            aria-label="本章目录"
+          >
             <p className="section-kicker">On this page</p>
             <nav>
               {headings.map((heading) => (

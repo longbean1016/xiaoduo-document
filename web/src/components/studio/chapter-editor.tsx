@@ -65,6 +65,7 @@ import { StudioSelect } from '@/components/ui/studio-select'
 import { ThemePicker } from '@/components/theme-picker'
 import { VersionHistory, type VersionItem } from './version-history'
 import { MarkdownDiffView } from './markdown-diff-view'
+import { centerTocItem } from '@/lib/center-toc-item'
 import { parseDatabaseDateTime } from '@/lib/database-time'
 import { compressImageForUpload } from '@/lib/image-compression'
 import { countWords, markdownHeadings } from '@/lib/markdown-headings'
@@ -204,6 +205,7 @@ export function ChapterEditor({
     async () => {},
   )
   const workspaceRef = useRef<HTMLDivElement | null>(null)
+  const editorTocRef = useRef<HTMLElement | null>(null)
   const tocLockRef = useRef(false)
   const tocTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -497,6 +499,17 @@ export function ChapterEditor({
     }
   }, [draftTick, editorHeadings])
 
+  useEffect(() => {
+    const toc = editorTocRef.current
+    if (!toc || !activeHeadingId) return
+    const active = toc.querySelector<HTMLElement>(
+      'button[aria-current="location"]',
+    )
+    if (!active) return
+
+    centerTocItem(toc, active)
+  }, [activeHeadingId])
+
   const currentCategory = categories.find(
     (category) => category.id === categoryId,
   )
@@ -758,13 +771,16 @@ export function ChapterEditor({
     if (!file) return
     const data = new FormData()
     data.set('file', file)
-    data.set('categoryId', categoryRef.current)
+    data.set('articleId', article.id)
     const response = await fetch('/api/studio/articles/import', {
       method: 'POST',
       body: data,
     })
     const payload = (await response.json()) as {
-      article?: { id: string }
+      article?: {
+        markdown: string
+        revision: number
+      }
       error?: string
     }
     if (!response.ok || !payload.article) {
@@ -777,9 +793,15 @@ export function ChapterEditor({
       )
       return
     }
-    toast.success('Markdown 已导入为章节草稿')
-    router.push(`/studio/notes/${payload.article.id}`)
-    router.refresh()
+    editor?.commands.setContent(payload.article.markdown, {
+      contentType: 'markdown',
+      emitUpdate: false,
+    })
+    revisionRef.current = payload.article.revision
+    dirtyRef.current = false
+    setSaveState('saved')
+    setDraftTick((current) => current + 1)
+    toast.success('Markdown 已导入当前文章')
   }
 
   function openLinkDialog() {
@@ -1136,7 +1158,10 @@ export function ChapterEditor({
             </div>
           </section>
 
-          <aside className="chapter-toc studio-editor-toc">
+          <aside
+            ref={editorTocRef}
+            className="chapter-toc studio-editor-toc"
+          >
             <p className="section-kicker">On this page</p>
             {editorHeadings.length ? (
               <nav aria-label="当前草稿目录">

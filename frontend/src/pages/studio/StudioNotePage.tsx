@@ -66,6 +66,7 @@ import {
 import { StudioSelect } from '../../components/studio/StudioSelect'
 import { Dialog } from '../../components/ui/Dialog'
 import { Hint } from '../../components/ui/Tooltip'
+import { centerTocItem } from '../../lib/centerTocItem'
 import { compressImageFile } from '../../lib/images'
 import { markdownHeadings } from '../../lib/markdownHeadings'
 import { looksLikeMermaidSource } from '../../lib/markdownMermaid'
@@ -111,7 +112,6 @@ export function StudioNotePage() {
   const unpublishNote = useSiteStore((state) => state.unpublishNote)
   const trashNote = useSiteStore((state) => state.trashNote)
   const restoreTrashedNote = useSiteStore((state) => state.restoreTrashedNote)
-  const importMarkdown = useSiteStore((state) => state.importMarkdown)
   const navigate = useNavigate()
   usePageTitle(note ? `${note.title} · 写作台` : '写作台 · 知笺')
   const isOwner = studioRole === 'owner'
@@ -162,6 +162,7 @@ export function StudioNotePage() {
   const draftPaneRef = useRef<HTMLElement | null>(null)
   const publishedPaneRef = useRef<HTMLElement | null>(null)
   const editorWorkspaceRef = useRef<HTMLDivElement | null>(null)
+  const editorTocRef = useRef<HTMLElement | null>(null)
   const tocSelectionLockRef = useRef(false)
   const tocSelectionTimerRef = useRef<number | null>(null)
   const normalizeTimerRef = useRef<number | null>(null)
@@ -454,6 +455,17 @@ export function StudioNotePage() {
     }
   }, [compareOpen, note?.markdown])
 
+  useEffect(() => {
+    const toc = editorTocRef.current
+    if (!toc || !activeEditorHeadingId) return
+    const active = toc.querySelector<HTMLElement>(
+      'button[aria-current="location"]',
+    )
+    if (!active) return
+
+    centerTocItem(toc, active)
+  }, [activeEditorHeadingId])
+
   const currentCategory = categories.find((item) => item.id === categoryId)
   const publishedCategory = categories.find(
     (item) => item.id === note?.published?.categoryId,
@@ -624,10 +636,6 @@ export function StudioNotePage() {
   }, [insertImageFile])
 
   const handleMarkdownImport = async (event: ChangeEvent<HTMLInputElement>) => {
-    if (!isOwner) {
-      toast.error('协作者不能创建新文章')
-      return
-    }
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
@@ -638,16 +646,23 @@ export function StudioNotePage() {
     try {
       const markdown = await file.text()
       const parsed = editor?.storage.markdown.manager.parse(markdown)
-      const newNoteId = importMarkdown({
-        title: file.name.replace(/\.(md|markdown)$/i, ''),
+      const result = updateNoteDraft(noteId ?? '', {
+        title: titleRef.current,
+        categoryId: categoryRef.current,
         markdown,
         plainText: extractPlainText(parsed),
-        sourceFileName: file.name,
-        categoryId: categoryRef.current,
+        expectedRevision: revisionRef.current,
       })
-      if (!newNoteId) throw new Error('导入失败')
-      toast.success('Markdown 已导入为章节草稿')
-      navigate(`/studio/notes/${newNoteId}`)
+      if (result !== 'saved') throw new Error('导入失败')
+      editor?.commands.setContent(markdown, {
+        contentType: 'markdown',
+        emitUpdate: false,
+      })
+      revisionRef.current += 1
+      dirtyRef.current = false
+      setSaveState('saved')
+      setDraftTick((current) => current + 1)
+      toast.success('Markdown 已导入当前文章')
     } catch {
       toast.error('Markdown 导入失败')
     }
@@ -1073,7 +1088,10 @@ export function StudioNotePage() {
           </section>
 
           {!compareOpen && (
-            <aside className="chapter-toc studio-editor-toc">
+            <aside
+              ref={editorTocRef}
+              className="chapter-toc studio-editor-toc"
+            >
               <p className="section-kicker">On this page</p>
               {editorHeadings.length ? (
                 <nav aria-label="当前草稿目录">
@@ -1163,15 +1181,13 @@ export function StudioNotePage() {
           <Trash2 size={20} />
           <span>回收</span>
         </button>
-        {isOwner && (
-          <button
-            type="button"
-            onClick={() => markdownInputRef.current?.click()}
-          >
-            <FileUp size={20} />
-            <span>导入</span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => markdownInputRef.current?.click()}
+        >
+          <FileUp size={20} />
+          <span>导入</span>
+        </button>
         {isPublished && publishedPath && (
           <a href={publishedPath} target="_blank" rel="noreferrer">
             <Eye size={20} />

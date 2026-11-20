@@ -59,8 +59,8 @@ export function ArticleDashboard({
   )
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [importCategoryId, setImportCategoryId] = useState(
-    categories[0]?.id ?? '',
+  const [importArticleId, setImportArticleId] = useState(
+    articles[0]?.id ?? '',
   )
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
@@ -208,7 +208,7 @@ export function ArticleDashboard({
     setMessage('')
     setPending(true)
     const data = new FormData(event.currentTarget)
-    data.set('categoryId', importCategoryId)
+    data.set('articleId', importArticleId)
     try {
       const response = await fetch('/api/studio/articles/import', {
         method: 'POST',
@@ -637,19 +637,19 @@ export function ArticleDashboard({
         open={importOpen}
         onOpenChange={setImportOpen}
         title="导入 Markdown"
-        description="导入会创建新的章节草稿，不会覆盖现有内容。"
+        description="选择一篇现有文章，将 Markdown 写入它的当前草稿。"
       >
         <form className="studio-import-dialog" onSubmit={importMarkdown}>
           <label>
-            <span>导入分类</span>
+            <span>目标文章</span>
             <StudioSelect
-              value={importCategoryId}
-              onChange={setImportCategoryId}
-              options={categories.map((category) => ({
-                value: category.id,
-                label: category.title,
+              value={importArticleId}
+              onChange={setImportArticleId}
+              options={articles.map((article) => ({
+                value: article.id,
+                label: `${article.categoryTitle} · ${article.title}`,
               }))}
-              ariaLabel="导入分类"
+              ariaLabel="目标文章"
             />
           </label>
           <label>
@@ -673,7 +673,7 @@ export function ArticleDashboard({
             <button
               type="submit"
               className="studio-primary-button"
-              disabled={pending || !importCategoryId}
+              disabled={pending || !importArticleId}
             >
               <Upload size={18} />
               {pending ? '正在导入…' : '导入为草稿'}
