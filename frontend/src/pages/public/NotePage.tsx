@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,6 +34,7 @@ import { NotFoundPage } from './NotFoundPage'
 export function NotePage() {
   const { categorySlug, noteSlug } = useParams()
   const location = useLocation()
+  const tocRef = useRef<HTMLElement>(null)
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null)
   const [applicationOpen, setApplicationOpen] = useState(false)
   const author = useSiteStore((state) => state.author)
@@ -156,6 +157,24 @@ export function NotePage() {
       scrollRoot.removeEventListener('scroll', onScroll)
     }
   }, [markdown])
+
+  useEffect(() => {
+    const toc = tocRef.current
+    if (!toc || !activeHeadingId) return
+    const active = toc.querySelector<HTMLElement>(
+      'a[aria-current="location"]',
+    )
+    if (!active) return
+
+    const tocRect = toc.getBoundingClientRect()
+    const activeRect = active.getBoundingClientRect()
+    const edgePadding = 12
+    if (activeRect.top < tocRect.top + edgePadding) {
+      toc.scrollTop += activeRect.top - tocRect.top - edgePadding
+    } else if (activeRect.bottom > tocRect.bottom - edgePadding) {
+      toc.scrollTop += activeRect.bottom - tocRect.bottom + edgePadding
+    }
+  }, [activeHeadingId])
 
   if (redirectTo) return <Navigate to={redirectTo} replace />
   if (!category || !note || !published) return <NotFoundPage />
@@ -308,7 +327,11 @@ export function NotePage() {
         </div>
 
         {!!headings.length && (
-          <aside className="chapter-toc" aria-label="本章目录">
+          <aside
+            ref={tocRef}
+            className="chapter-toc"
+            aria-label="本章目录"
+          >
             <p className="section-kicker">On this page</p>
             <nav>
               {headings.map((heading) => (
