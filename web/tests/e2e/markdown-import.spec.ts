@@ -25,7 +25,8 @@ test('owner imports Markdown as an editable draft', async ({ page }) => {
   await importDialog
     .getByRole('button', { name: '导入为草稿' })
     .click()
-  await expect(page.getByLabel('章节标题')).toHaveValue('导入的章节')
+  await expect(page).toHaveURL(/\/studio\/notes\/article-1$/)
+  await expect(page.getByLabel('章节标题')).toHaveValue('写作不是归档')
   await expect(page.getByRole('textbox', { name: '章节正文' })).toContainText(
     '从文件导入的正文。',
   )
@@ -59,7 +60,7 @@ test('collaborator imports Markdown and receives access to the draft', async ({
     {
       headers: { origin: appOrigin },
       multipart: {
-        categoryId: 'category-2',
+        articleId: 'article-2',
         file: {
           name: '越权导入.md',
           mimeType: 'text/markdown',
@@ -90,25 +91,37 @@ test('collaborator imports Markdown and receives access to the draft', async ({
     .getByRole('button', { name: '导入为草稿' })
     .click()
 
-  await expect(page.getByLabel('章节标题')).toHaveValue('协作者导入')
+  await expect(page).toHaveURL(/\/studio\/notes\/article-1$/)
+  await expect(page.getByLabel('章节标题')).toHaveValue('写作不是归档')
+  await expect(page.getByRole('textbox', { name: '章节正文' })).toContainText(
+    '协作者可以继续编辑。',
+  )
   await expect(
     page.getByRole('button', { name: '导入 Markdown' }),
   ).toBeVisible()
-  const articleId = page.url().split('/').at(-1)
-  expect(articleId).toBeTruthy()
 
   const verify = await createTestConnection()
   try {
+    const [articles] = await verify.query(
+      `SELECT COUNT(*) AS count FROM article`,
+    )
+    expect((articles as Array<{ count: number }>)[0].count).toBe(2)
     const [grants] = await verify.query(
-      `SELECT user_id, article_id FROM article_grant WHERE article_id = ?`,
-      [articleId],
+      `SELECT user_id, article_id FROM article_grant
+       WHERE user_id = 'collaborator-import'`,
     )
     expect(grants).toEqual([
       expect.objectContaining({
         user_id: 'collaborator-import',
-        article_id: articleId,
+        article_id: 'article-1',
       }),
     ])
+    const [versions] = await verify.query(
+      `SELECT markdown FROM article WHERE id = 'article-1'`,
+    )
+    expect(
+      (versions as Array<{ markdown: string }>)[0].markdown,
+    ).toContain('协作者可以继续编辑。')
   } finally {
     await verify.end()
   }

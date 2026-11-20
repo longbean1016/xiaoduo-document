@@ -111,7 +111,6 @@ export function StudioNotePage() {
   const unpublishNote = useSiteStore((state) => state.unpublishNote)
   const trashNote = useSiteStore((state) => state.trashNote)
   const restoreTrashedNote = useSiteStore((state) => state.restoreTrashedNote)
-  const importMarkdown = useSiteStore((state) => state.importMarkdown)
   const navigate = useNavigate()
   usePageTitle(note ? `${note.title} · 写作台` : '写作台 · 知笺')
   const isOwner = studioRole === 'owner'
@@ -624,10 +623,6 @@ export function StudioNotePage() {
   }, [insertImageFile])
 
   const handleMarkdownImport = async (event: ChangeEvent<HTMLInputElement>) => {
-    if (!isOwner) {
-      toast.error('协作者不能创建新文章')
-      return
-    }
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
@@ -638,16 +633,20 @@ export function StudioNotePage() {
     try {
       const markdown = await file.text()
       const parsed = editor?.storage.markdown.manager.parse(markdown)
-      const newNoteId = importMarkdown({
-        title: file.name.replace(/\.(md|markdown)$/i, ''),
+      const result = updateNoteDraft(noteId ?? '', {
+        title: titleRef.current,
+        categoryId: categoryRef.current,
         markdown,
         plainText: extractPlainText(parsed),
-        sourceFileName: file.name,
-        categoryId: categoryRef.current,
+        expectedRevision: revisionRef.current,
       })
-      if (!newNoteId) throw new Error('导入失败')
-      toast.success('Markdown 已导入为章节草稿')
-      navigate(`/studio/notes/${newNoteId}`)
+      if (result !== 'saved') throw new Error('导入失败')
+      editor?.commands.setContent(markdown, { emitUpdate: false })
+      revisionRef.current += 1
+      dirtyRef.current = false
+      setSaveState('saved')
+      setDraftTick((current) => current + 1)
+      toast.success('Markdown 已导入当前文章')
     } catch {
       toast.error('Markdown 导入失败')
     }
@@ -1163,15 +1162,13 @@ export function StudioNotePage() {
           <Trash2 size={20} />
           <span>回收</span>
         </button>
-        {isOwner && (
-          <button
-            type="button"
-            onClick={() => markdownInputRef.current?.click()}
-          >
-            <FileUp size={20} />
-            <span>导入</span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => markdownInputRef.current?.click()}
+        >
+          <FileUp size={20} />
+          <span>导入</span>
+        </button>
         {isPublished && publishedPath && (
           <a href={publishedPath} target="_blank" rel="noreferrer">
             <Eye size={20} />

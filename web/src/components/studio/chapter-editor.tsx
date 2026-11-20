@@ -758,13 +758,16 @@ export function ChapterEditor({
     if (!file) return
     const data = new FormData()
     data.set('file', file)
-    data.set('categoryId', categoryRef.current)
+    data.set('articleId', article.id)
     const response = await fetch('/api/studio/articles/import', {
       method: 'POST',
       body: data,
     })
     const payload = (await response.json()) as {
-      article?: { id: string }
+      article?: {
+        markdown: string
+        revision: number
+      }
       error?: string
     }
     if (!response.ok || !payload.article) {
@@ -777,9 +780,14 @@ export function ChapterEditor({
       )
       return
     }
-    toast.success('Markdown 已导入为章节草稿')
-    router.push(`/studio/notes/${payload.article.id}`)
-    router.refresh()
+    editor?.commands.setContent(payload.article.markdown, {
+      emitUpdate: false,
+    })
+    revisionRef.current = payload.article.revision
+    dirtyRef.current = false
+    setSaveState('saved')
+    setDraftTick((current) => current + 1)
+    toast.success('Markdown 已导入当前文章')
   }
 
   function openLinkDialog() {
