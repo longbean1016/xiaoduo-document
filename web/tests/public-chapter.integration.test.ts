@@ -12,6 +12,22 @@ describe('public chapter service', () => {
         ['category-1', '注意力与写作', 'attention-and-writing', 1],
       )
       await connection.query(
+        `INSERT INTO site_profile (
+          id, author_name, avatar_url, role_title, intro, now_text,
+          location, email, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(3))`,
+        [
+          'primary',
+          '小多',
+          '/owner-profile-avatar.webp',
+          '站主',
+          '',
+          '',
+          '广州',
+          'owner@example.com',
+        ],
+      )
+      await connection.query(
         `INSERT INTO article (
           id, category_id, title, path, markdown, plain_text, revision,
           publication_state, created_at, updated_at
@@ -195,6 +211,7 @@ describe('public chapter service', () => {
       expect.objectContaining({
         id: 'owner-1',
         name: '小多',
+        avatarUrl: '/owner-profile-avatar.webp',
         role: 'owner',
       }),
       expect.objectContaining({
