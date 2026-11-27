@@ -108,9 +108,11 @@ async function listPublicAuthors(articleId: string): Promise<PublicAuthor[]> {
       authorName: articleVersion.authorName,
       authorRole: articleVersion.authorRole,
       avatarUrl: user.image,
+      profileAvatarUrl: siteProfile.avatarUrl,
     })
     .from(articleVersion)
     .leftJoin(user, eq(user.id, articleVersion.authorId))
+    .leftJoin(siteProfile, eq(siteProfile.id, 'primary'))
     .where(
       and(
         eq(articleVersion.articleId, articleId),
@@ -124,7 +126,10 @@ async function listPublicAuthors(articleId: string): Promise<PublicAuthor[]> {
     authors.set(version.authorId, {
       id: version.authorId,
       name: version.authorName,
-      avatarUrl: version.avatarUrl ?? null,
+      avatarUrl:
+        version.authorRole === 'owner'
+          ? (version.profileAvatarUrl ?? version.avatarUrl ?? null)
+          : (version.avatarUrl ?? null),
       role: version.authorRole,
     })
   }

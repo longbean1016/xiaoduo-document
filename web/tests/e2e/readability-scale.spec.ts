@@ -62,6 +62,11 @@ test('public reading surfaces use the larger type and icon scale', async ({
       ],
     )
     await connection.query(
+      `UPDATE site_profile
+       SET avatar_url = '/owner-profile-avatar.webp'
+       WHERE id = 'primary'`,
+    )
+    await connection.query(
       `INSERT INTO article_version (
         id, article_id, kind, title, category_id, path, markdown, plain_text,
         author_id, author_name, author_role, created_at
@@ -105,6 +110,9 @@ test('public reading surfaces use the larger type and icon scale', async ({
   ).toHaveCount(0)
   const authorItems = authors.locator('.chapter-author')
   await expect(authorItems).toHaveCount(2)
+  await expect(
+    authorItems.nth(0).locator('.author-avatar img'),
+  ).toHaveAttribute('src', '/owner-profile-avatar.webp')
   await expect(
     authorItems.nth(1).locator('.author-avatar img'),
   ).toHaveAttribute('src', '/xiaoduo-mark.jpg')
